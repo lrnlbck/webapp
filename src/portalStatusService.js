@@ -66,8 +66,12 @@ async function checkIlias() {
         const $r3 = cheerio.load(r3.data);
         const ok = $r3('[data-action*="logout"], a[href*="logout"], .il-maincontrols-breadcrumbs').length > 0
             || Object.keys(cookieJar).some(k => k.toLowerCase().includes('ilias'));
+        if (!ok) console.warn('⚠️  ILIAS: SAML3 zurück, aber kein Login-Indikator gefunden. Seite:', r3.data.substring(0, 300));
         return ok ? 'connected' : 'error';
-    } catch { return 'error'; }
+    } catch (e) {
+        console.error('❌ ILIAS Verbindungsfehler:', e.message);
+        return 'error';
+    }
 }
 
 async function checkAlma() {
@@ -83,8 +87,12 @@ async function checkAlma() {
         }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         // Error on ALMA usually throws HTTP error or stays on login page
         const isErrorPage = res.data.includes('nicht korrekt') || res.data.includes('Fehler');
+        if (isErrorPage) console.warn('⚠️  ALMA: Login fehlgeschlagen – Passwort falsch?');
         return isErrorPage ? 'error' : 'connected';
-    } catch { return 'error'; }
+    } catch (e) {
+        console.error('❌ ALMA Verbindungsfehler:', e.message);
+        return 'error';
+    }
 }
 
 async function checkMoodle() {
@@ -102,8 +110,12 @@ async function checkMoodle() {
             username: process.env.MOODLE_USER, password: process.env.MOODLE_PASS, logintoken: loginToken
         }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         const success = res.data.includes('logout.php') || res.data.includes('user/profile.php');
+        if (!success) console.warn('⚠️  MOODLE: Login fehlgeschlagen. Seitenanfang:', res.data.substring(0, 200));
         return success ? 'connected' : 'error';
-    } catch { return 'error'; }
+    } catch (e) {
+        console.error('❌ MOODLE Verbindungsfehler:', e.message);
+        return 'error';
+    }
 }
 
 async function checkSimed() {
@@ -120,8 +132,12 @@ async function checkSimed() {
         }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, validateStatus: () => true });
         // 302 Redirect is typically a successful login
         if (res.status === 302 || (res.data && res.data.includes('logout'))) return 'connected';
+        console.warn('⚠️  SIMED: Login fehlgeschlagen, Status:', res.status);
         return 'error';
-    } catch { return 'error'; }
+    } catch (e) {
+        console.error('❌ SIMED Verbindungsfehler:', e.message);
+        return 'error';
+    }
 }
 
 async function checkAllPortals() {
