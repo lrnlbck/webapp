@@ -154,7 +154,14 @@
 
 .portal-chip.not_configured {
     border-style: dashed;
-    opacity: 0.7;
+    border-color: var(--border);
+    opacity: 0.6;
+    font-style: italic;
+}
+
+.portal-chip.not_configured::before {
+    background: var(--text-muted);
+    box-shadow: none;
 }
 
 .hub-cards {
@@ -556,6 +563,7 @@
     padding: 8px 0 4px;
     font-style: italic;
 }
+
 /* ─── Lernplan Events im Stundenplan ─────────────────────────── */
 .sp-event.sp-event-exam {
     background: rgba(239, 68, 68, 0.06);
