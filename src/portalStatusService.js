@@ -11,9 +11,8 @@ async function checkIlias() {
         const ILIAS_BASE = process.env.ILIAS_URL || 'https://ovidius.uni-tuebingen.de';
         const IDP_BASE = 'https://idp.uni-tuebingen.de';
         const cookieJar = {};
-        const client = axios.create({ maxRedirects: 15, timeout: 15000, validateStatus: s => s < 500 });
+        const client = axios.create({ maxRedirects: 15, timeout: 20000, validateStatus: s => s < 500 });
 
-        // Cookie-Jar für SAML-Flow
         client.interceptors.response.use(r => {
             (r.headers['set-cookie'] || []).forEach(c => {
                 const [kv] = c.split(';');
@@ -28,12 +27,23 @@ async function checkIlias() {
             return cfg;
         });
 
-        // Schritt 1: ILIAS → IDP Redirect
-        const r1 = await client.get(`${ILIAS_BASE}/ilias3/ilias.php?lang=de&cmd=force_login&baseClass=ilStartUpGUI`);
+        // Schritt 1: ILIAS aufrufen
+        const step1Url = `${ILIAS_BASE}/ilias3/ilias.php?lang=de&cmd=force_login&baseClass=ilStartUpGUI`;
+        console.log(`🔍 ILIAS Check Schritt 1: GET ${step1Url}`);
+        const r1 = await client.get(step1Url);
+        console.log(`🔍 ILIAS Schritt 1 Status: ${r1.status}, URL nach Redirects: ${r1.request?.res?.responseUrl || '?'}`);
+        console.log(`🔍 ILIAS Schritt 1 HTML-Anfang: ${r1.data.substring(0, 400)}`);
+
         const $idp = cheerio.load(r1.data);
         const idpForm = $idp('form').first();
         const idpAction = idpForm.attr('action');
-        if (!idpAction) return 'error';
+        console.log(`🔍 ILIAS IDP-Form action: ${idpAction || 'NICHT GEFUNDEN'}`);
+        console.log(`🔍 ILIAS Alle Forms auf Seite: ${$idp('form').length}`);
+
+        if (!idpAction) {
+            console.error('❌ ILIAS: IDP Login-Formular nicht gefunden. Response HTML:', r1.data.substring(0, 600));
+            return 'error';
+        }
 
         const idpPostUrl = idpAction.startsWith('http') ? idpAction : `${IDP_BASE}${idpAction}`;
         const idpParams = new URLSearchParams();
@@ -45,15 +55,20 @@ async function checkIlias() {
             if (n) idpParams.set(n, $idp(el).val() || '');
         });
 
-        // Schritt 2: Credentials an IDP senden
+        // Schritt 2: Credentials an IDP
+        console.log(`🔍 ILIAS Check Schritt 2: POST ${idpPostUrl}`);
         const r2 = await client.post(idpPostUrl, idpParams.toString(), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
+        console.log(`🔍 ILIAS Schritt 2 Status: ${r2.status}`);
         const $r2 = cheerio.load(r2.data);
 
-        // Schritt 3: SAML-Assertion zurück an ILIAS
         const samlAction = $r2('form').first().attr('action');
-        if (!samlAction) return 'error'; // kein SAML-Form = Login fehlgeschlagen
+        console.log(`🔍 ILIAS SAML Action: ${samlAction || 'NICHT GEFUNDEN'}`);
+        if (!samlAction) {
+            console.error('❌ ILIAS: SAML-Assertion form nicht gefunden. IDP Antwort:', r2.data.substring(0, 500));
+            return 'error';
+        }
 
         const samlParams = new URLSearchParams();
         $r2('form input').each((_, el) => {
@@ -63,16 +78,19 @@ async function checkIlias() {
         const r3 = await client.post(samlAction, samlParams.toString(), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
+        console.log(`🔍 ILIAS Schritt 3 Status: ${r3.status}`);
         const $r3 = cheerio.load(r3.data);
         const ok = $r3('[data-action*="logout"], a[href*="logout"], .il-maincontrols-breadcrumbs').length > 0
             || Object.keys(cookieJar).some(k => k.toLowerCase().includes('ilias'));
-        if (!ok) console.warn('⚠️  ILIAS: SAML3 zurück, aber kein Login-Indikator gefunden. Seite:', r3.data.substring(0, 300));
+        if (!ok) console.warn('⚠️  ILIAS: SAML abgeschlossen, aber kein Login erkannt. Seite:', r3.data.substring(0, 300));
+        else console.log('✅ ILIAS: Erfolgreich eingeloggt');
         return ok ? 'connected' : 'error';
     } catch (e) {
         console.error('❌ ILIAS Verbindungsfehler:', e.message);
         return 'error';
     }
 }
+
 
 async function checkAlma() {
     if (!process.env.ALMA_USER || process.env.ALMA_USER === 'dein_benutzername') return 'not_configured';
