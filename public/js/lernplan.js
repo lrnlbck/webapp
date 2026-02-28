@@ -152,14 +152,16 @@ async function lpRestoreToServer(localExams) {
 async function lpLoadExams() {
     try {
         let exams = await api('GET', '/api/lernplan/exams');
-        if ((!exams || exams.length === 0)) {
+        const local = lpGetFromLocalStorage();
+
+        if ((!exams || exams.length === 0) && local.length > 0) {
             // Server might have lost data (Railway redeploy) – try localStorage
-            const local = lpGetFromLocalStorage();
-            if (local.length > 0) {
-                await lpRestoreToServer(local);
-                exams = await api('GET', '/api/lernplan/exams');
-            }
+            await lpRestoreToServer(local);
+            exams = await api('GET', '/api/lernplan/exams');
+            // If the server STILL returns 0 after restore, trust local storage to prevent wiping it
+            if (!exams || exams.length === 0) exams = local;
         }
+
         lpState.exams = exams || [];
         lpSaveToLocalStorage(lpState.exams); // always keep in sync
         lpRenderExams();
@@ -230,6 +232,7 @@ async function lpMarkDone(id) {
         await api('PATCH', `/api/lernplan/exams/${id}`, { status: 'done' });
         toast('✅ Prüfung als geschrieben markiert!', 'success');
         await lpLoadExams();
+        lpSaveToLocalStorage(lpState.exams);
         lpLoadCalendar();
     } catch { toast('Fehler beim Aktualisieren', 'error'); }
 }
@@ -237,6 +240,8 @@ async function lpMarkDone(id) {
 async function lpToggleCalendar(id, show) {
     try {
         await api('PATCH', `/api/lernplan/exams/${id}`, { showInCalendar: show });
+        await lpLoadExams();
+        lpSaveToLocalStorage(lpState.exams);
         await lpLoadCalendar();
     } catch { toast('Fehler', 'error'); }
 }
@@ -247,6 +252,7 @@ async function lpDeleteExam(id) {
         await api('DELETE', `/api/lernplan/exams/${id}`);
         toast('Prüfung gelöscht', 'info');
         await lpLoadExams();
+        lpSaveToLocalStorage(lpState.exams);
         lpLoadCalendar();
     } catch { toast('Fehler beim Löschen', 'error'); }
 }
@@ -365,6 +371,7 @@ async function lpSubmitExam() {
         toast(`🎯 Prüfung "${subject}" angelegt – ${exam.learnBlocks?.length || 0} Lernblöcke geplant!`, 'success', 5000);
         lpCloseModal();
         await lpLoadExams();
+        lpSaveToLocalStorage(lpState.exams);
         lpLoadCalendar();
         lpSwitchTab('calendar');
 
