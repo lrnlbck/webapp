@@ -126,13 +126,21 @@ function lpRenderCalendar(events) {
 // ═══════════════════════════════════════════════════════════════
 // ─── localStorage Backup ────────────────────────────────────────
 const LP_STORE_KEY = 'tuetool_lernplan_exams';
+const LP_SYNC_TIME_KEY = 'tuetool_lernplan_sync_time';
 
 function lpSaveToLocalStorage(exams) {
-    try { localStorage.setItem(LP_STORE_KEY, JSON.stringify(exams)); } catch { }
+    try {
+        localStorage.setItem(LP_STORE_KEY, JSON.stringify(exams));
+        localStorage.setItem(LP_SYNC_TIME_KEY, Date.now().toString());
+    } catch { }
 }
 
 function lpGetFromLocalStorage() {
     try { return JSON.parse(localStorage.getItem(LP_STORE_KEY) || '[]'); } catch { return []; }
+}
+
+function lpGetLastSyncTime() {
+    try { return parseInt(localStorage.getItem(LP_SYNC_TIME_KEY) || '0', 10); } catch { return 0; }
 }
 
 async function lpRestoreToServer(localExams) {
@@ -153,13 +161,21 @@ async function lpLoadExams() {
     try {
         let exams = await api('GET', '/api/lernplan/exams');
         const local = lpGetFromLocalStorage();
+        const lastSync = lpGetLastSyncTime();
 
+        // Wenn der Server 0 liefert, das lokale Backup aber voll ist:
+        // Unterscheiden zwischen "Railway hat neugestartet" und "Nutzer hat gerade alles gelöscht".
+        // Wenn der letzte bewusste Sync sehr alt ist (Railway Neustart), dann stelle her.
+        // Wenn der Sync sehr neu ist (Nutzer hat gerade auf Löschen gedrückt), dann vertraue dem leeren Array.
         if ((!exams || exams.length === 0) && local.length > 0) {
-            // Server might have lost data (Railway redeploy) – try localStorage
-            await lpRestoreToServer(local);
-            exams = await api('GET', '/api/lernplan/exams');
-            // If the server STILL returns 0 after restore, trust local storage to prevent wiping it
-            if (!exams || exams.length === 0) exams = local;
+            // Wenn die letzte erfolgreiche lokale Sicherung mindestens 1 Sekunde alt ist.
+            // (Bei manuellem Löschen wird der SyncTimestamp auf JETZT gesetzt)
+            if (Date.now() - lastSync > 1000) {
+                // Server might have lost data (Railway redeploy) – try localStorage
+                await lpRestoreToServer(local);
+                exams = await api('GET', '/api/lernplan/exams');
+                if (!exams || exams.length === 0) exams = local;
+            }
         }
 
         lpState.exams = exams || [];
@@ -251,8 +267,11 @@ async function lpDeleteExam(id) {
     try {
         await api('DELETE', `/api/lernplan/exams/${id}`);
         toast('Prüfung gelöscht', 'info');
-        await lpLoadExams();
+        // Sofort aus lokalem State entfernen und wegschreiben, damit lpLoadExams es nicht wiederherstellt
+        lpState.exams = lpState.exams.filter(e => e.id !== id);
         lpSaveToLocalStorage(lpState.exams);
+
+        await lpLoadExams();
         lpLoadCalendar();
     } catch { toast('Fehler beim Löschen', 'error'); }
 }
