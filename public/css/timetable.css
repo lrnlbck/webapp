@@ -1,0 +1,577 @@
+/* ═════════════════════════════════════════════════════
+   HUB SCREEN
+═════════════════════════════════════════════════════ */
+#hub-screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: max(env(safe-area-inset-bottom), 20px);
+    animation: fadeIn 0.4s ease;
+}
+
+#hub-screen.visible {
+    display: flex;
+}
+
+.hub-header {
+    position: relative;
+    padding: max(env(safe-area-inset-top, 44px), 44px) 24px 28px;
+    background: linear-gradient(180deg, rgba(91, 141, 239, 0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+}
+
+.hub-greeting {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
+
+.hub-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.hub-lock-btn {
+    position: absolute;
+    top: max(env(safe-area-inset-top, 44px), 44px);
+    right: 20px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.hub-lock-btn:active {
+    transform: scale(0.92);
+}
+
+.hub-portals {
+    margin: 0 20px -10px;
+}
+
+.hub-portals-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#portal-refresh-btn {
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.4s;
+}
+
+#portal-refresh-btn:active {
+    opacity: 1;
+}
+
+#portal-refresh-btn.spinning {
+    animation: spin 1s linear infinite;
+    opacity: 1;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.portal-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.portal-chip {
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.portal-chip::before {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.portal-chip.loading {
+    opacity: 0.5;
+}
+
+.portal-chip.loading::before {
+    animation: blink 1.5s infinite;
+    background: var(--text-secondary);
+}
+
+.portal-chip.connected {
+    color: var(--text-primary);
+    border-color: rgba(52, 211, 153, 0.3);
+    background: rgba(52, 211, 153, 0.05);
+}
+
+.portal-chip.connected::before {
+    background: var(--accent-green);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+.portal-chip.error {
+    color: var(--text-primary);
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(248, 113, 113, 0.05);
+}
+
+.portal-chip.error::before {
+    background: var(--accent-red);
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+}
+
+.portal-chip.not_configured {
+    border-style: dashed;
+    opacity: 0.7;
+}
+
+.hub-cards {
+    flex: 1;
+    padding: 24px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hub-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    font-family: var(--font);
+    color: var(--text-primary);
+    text-align: left;
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.hub-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0);
+    transition: background 0.15s;
+}
+
+.hub-card:active::before {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.hub-card:active {
+    transform: scale(0.985);
+    box-shadow: none;
+}
+
+.hub-card-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.hub-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.hub-card-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.hub-card-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.hub-card-arrow {
+    font-size: 22px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.hub-footer {
+    padding: 12px 24px;
+    text-align: center;
+}
+
+.hub-footer-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+}
+
+/* ═════════════════════════════════════════════════════
+   SUB-APP CONTAINER
+═════════════════════════════════════════════════════ */
+.sub-app {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.sub-app.visible {
+    display: flex;
+}
+
+/* Back button in header */
+.back-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    color: var(--accent-blue);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: var(--font);
+    line-height: 1;
+    margin-right: 8px;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.back-btn:active {
+    transform: scale(0.88);
+    background: var(--bg-glass-hover);
+}
+
+/* ═════════════════════════════════════════════════════
+   STUNDENPLAN – WEEK NAV
+═════════════════════════════════════════════════════ */
+.sp-week-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.safe-top-offset {
+    top: 64px;
+}
+
+.sp-week-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    color: var(--accent-blue);
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font);
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.sp-week-btn:active {
+    transform: scale(0.88);
+}
+
+.sp-week-info {
+    flex: 1;
+    text-align: center;
+}
+
+.sp-week-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sp-week-dates {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+/* ═════════════════════════════════════════════════════
+   STUNDENPLAN – CONTENT
+═════════════════════════════════════════════════════ */
+.sp-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px max(env(safe-area-inset-bottom, 80px), 80px);
+    overscroll-behavior: contain;
+}
+
+/* Day block */
+.sp-day-block {
+    margin-bottom: 16px;
+}
+
+.sp-day-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.sp-day-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.sp-day-date {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.sp-day-today .sp-day-label {
+    color: var(--accent-blue);
+}
+
+.sp-day-today .sp-day-badge {
+    background: var(--accent-blue);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Event card */
+.sp-event {
+    display: flex;
+    gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--accent-blue);
+    position: relative;
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sp-event:active {
+    transform: scale(0.99);
+    background: var(--bg-glass-hover);
+}
+
+.sp-event.mandatory {
+    border-left-color: #ef4444;
+}
+
+.sp-event-time {
+    min-width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.sp-event-time-from {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sp-event-time-to {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.sp-event-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.sp-event-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.sp-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.sp-event-chip {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 2px 7px;
+}
+
+.sp-event-chip.platform {
+    color: var(--accent-blue);
+    border-color: rgba(91, 141, 239, 0.2);
+}
+
+/* Pflicht badge */
+.sp-pflicht-badge {
+    font-size: 9px;
+    font-weight: 800;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-full);
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+/* Empty state */
+.sp-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+}
+
+.sp-empty-icon {
+    font-size: 44px;
+    margin-bottom: 12px;
+}
+
+.sp-empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.sp-empty-desc {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ═════════════════════════════════════════════════════
+   STUNDENPLAN – SETTINGS VIEW
+═════════════════════════════════════════════════════ */
+.sp-settings {
+    padding: 16px;
+    display: none;
+}
+
+.sp-settings.visible {
+    display: block;
+}
+
+/* ═════════════════════════════════════════════════════
+   LEGEND (Farbkodierung)
+═════════════════════════════════════════════════════ */
+.sp-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.sp-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.sp-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* No events in day */
+.sp-no-events {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 8px 0 4px;
+    font-style: italic;
+}
+/* ─── Lernplan Events im Stundenplan ─────────────────────────── */
+.sp-event.sp-event-exam {
+    background: rgba(239, 68, 68, 0.06);
+    border-left-width: 4px;
+}
+
+.sp-event.sp-event-learn {
+    background: rgba(5, 150, 105, 0.06);
+    border-left-width: 4px;
+}
+
+.sp-event.sp-event-exam .sp-event-title {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.sp-event.sp-event-learn .sp-event-title {
+    color: #059669;
+}

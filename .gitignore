@@ -1,0 +1,28 @@
+# !! NIEMALS COMMITTEN !!
+.env
+
+# Dependencies
+node_modules/
+
+# Downloaded lecture files
+downloads/
+cache/
+
+# Generated PDFs
+summaries/
+*.pdf
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime
+*.pid
+
+# IDE
+.vscode/
+.idea/

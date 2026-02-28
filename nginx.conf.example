@@ -1,0 +1,63 @@
+# nginx Konfiguration – webapp.lml-med.de
+# Speichern als: /etc/nginx/sites-available/webapp.lml-med.de
+
+server {
+    listen 80;
+    server_name webapp.lml-med.de;
+
+    # Automatisch zu HTTPS weiterleiten
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name webapp.lml-med.de;
+
+    # SSL – wird von Certbot automatisch ergänzt
+    ssl_certificate     /etc/letsencrypt/live/webapp.lml-med.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/webapp.lml-med.de/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Sicherheits-Header
+    add_header X-Frame-Options        "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
+
+    # Logs
+    access_log /var/log/nginx/webapp.lml-med.de.access.log;
+    error_log  /var/log/nginx/webapp.lml-med.de.error.log;
+
+    # Größe für PDF-Uploads
+    client_max_body_size 50M;
+
+    # Node.js Reverse Proxy
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade    $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host       $host;
+        proxy_set_header   X-Real-IP  $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 120s;
+    }
+
+    # Static files direkt über nginx (schneller)
+    location /css/ {
+        alias /var/www/webapp.lml-med.de/public/css/;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+    }
+    location /js/ {
+        alias /var/www/webapp.lml-med.de/public/js/;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+    }
+    location /icons/ {
+        alias /var/www/webapp.lml-med.de/public/icons/;
+        expires 30d;
+    }
+}

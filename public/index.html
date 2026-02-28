@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="description"
+        content="TüTool Plattform – Lernübersicht, Stundenplan und mehr für Studierende der Uni Tübingen.">
+    <title>TüTool – Uni Tübingen</title>
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TüTool">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a12">
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/icons/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/timetable.css">
+    <link rel="stylesheet" href="/css/lernplan.css">
+</head>
+
+<body>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ═══════════════════════════════════════════════
+     LOCK SCREEN
+═══════════════════════════════════════════════ -->
+    <div id="lock-screen">
+        <div class="lock-brand">
+            <div class="lock-icon">🎓</div>
+            <div class="lock-title">TüTool</div>
+            <div class="lock-subtitle">Uni Tübingen · SoSe 2026</div>
+        </div>
+
+        <div class="pin-error" id="pin-error"></div>
+
+        <div class="pin-dots" id="pin-dots">
+            <div class="pin-dot" id="dot-0"></div>
+            <div class="pin-dot" id="dot-1"></div>
+            <div class="pin-dot" id="dot-2"></div>
+            <div class="pin-dot" id="dot-3"></div>
+        </div>
+
+        <div class="pin-pad" id="pin-pad">
+            <button class="pin-btn" data-digit="1" id="pin-1">1<span class="pin-btn-sub"></span></button>
+            <button class="pin-btn" data-digit="2" id="pin-2">2<span class="pin-btn-sub">ABC</span></button>
+            <button class="pin-btn" data-digit="3" id="pin-3">3<span class="pin-btn-sub">DEF</span></button>
+            <button class="pin-btn" data-digit="4" id="pin-4">4<span class="pin-btn-sub">GHI</span></button>
+            <button class="pin-btn" data-digit="5" id="pin-5">5<span class="pin-btn-sub">JKL</span></button>
+            <button class="pin-btn" data-digit="6" id="pin-6">6<span class="pin-btn-sub">MNO</span></button>
+            <button class="pin-btn" data-digit="7" id="pin-7">7<span class="pin-btn-sub">PQRS</span></button>
+            <button class="pin-btn" data-digit="8" id="pin-8">8<span class="pin-btn-sub">TUV</span></button>
+            <button class="pin-btn" data-digit="9" id="pin-9">9<span class="pin-btn-sub">WXYZ</span></button>
+            <div class="pin-btn empty"></div>
+            <button class="pin-btn" data-digit="0" id="pin-0">0</button>
+            <button class="pin-btn delete" id="pin-delete">⌫</button>
+        </div>
+
+        <div class="lock-hint" id="lock-hint">
+            Gib deinen PIN ein, um die<br>App zu entsperren
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     HUB SCREEN – App-Auswahl nach Login
+═══════════════════════════════════════════════ -->
+    <div id="hub-screen">
+        <div class="hub-header safe-top">
+            <div class="hub-greeting" id="hub-greeting">Guten Tag</div>
+            <div class="hub-subtitle">Medizin · Uni Tübingen</div>
+            <button class="hub-lock-btn" id="hub-lock-btn" title="Sperren">🔒</button>
+        </div>
+
+        <div class="hub-portals" id="hub-portals">
+            <div class="hub-portals-title">Verbundene Portale <span id="portal-refresh-btn">🔄</span></div>
+            <div class="portal-chips">
+                <div class="portal-chip loading" id="chip-ilias">ILIAS</div>
+                <div class="portal-chip loading" id="chip-alma">ALMA</div>
+                <div class="portal-chip loading" id="chip-moodle">Moodle</div>
+                <div class="portal-chip loading" id="chip-simed">SIMED</div>
+            </div>
+        </div>
+
+        <div class="hub-cards">
+            <!-- Lernübersicht -->
+            <button class="hub-card" id="open-lernuebersicht" data-app="lernuebersicht">
+                <div class="hub-card-icon" style="background: linear-gradient(135deg,#5b8def,#8b5cf6);">📚</div>
+                <div class="hub-card-content">
+                    <div class="hub-card-title">Lernübersicht</div>
+                    <div class="hub-card-desc">Vorlesungsthemen, Lernplan und PDF-Export aus ILIAS, MOODLE, ALMA, SIMED
+                    </div>
+                </div>
+                <span class="hub-card-arrow">›</span>
+            </button>
+
+            <!-- Stundenplan -->
+            <button class="hub-card" id="open-stundenplan" data-app="stundenplan">
+                <div class="hub-card-icon" style="background: linear-gradient(135deg,#059669,#0d9488);">📅</div>
+                <div class="hub-card-content">
+                    <div class="hub-card-title">Stundenplan</div>
+                    <div class="hub-card-desc">Wochenplan mit Uhrzeiten, Pflichtveranstaltungen und Wochenausblick per
+                        Mail</div>
+                </div>
+                <span class="hub-card-arrow">›</span>
+            </button>
+
+            <!-- Lernplan -->
+            <button class="hub-card" id="open-lernplan">
+                <div class="hub-card-icon" style="background: linear-gradient(135deg,#ef4444,#f97316);">🎯</div>
+                <div class="hub-card-content">
+                    <div class="hub-card-title">Lernplan</div>
+                    <div class="hub-card-desc">Prüfungen anlegen, Lernblöcke automatisch einplanen, PDF-Export</div>
+                </div>
+                <span class="hub-card-arrow">›</span>
+            </button>
+        </div>
+
+        <div class="hub-footer">
+            <div class="hub-footer-text">SS 26 · Uni Tübingen · <span id="app-version" style="opacity:0.5;"></span>
+            </div>
+            <div
+                style="display:flex;align-items:center;gap:12px;margin-top:10px;justify-content:center;flex-wrap:wrap;">
+                <label id="hub-demo-toggle"
+                    style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--text-muted);">
+                    <label class="switch" style="transform:scale(0.8);transform-origin:left;">
+                        <input type="checkbox" id="toggle-demo-hub">
+                        <span class="slider round"></span>
+                    </label>
+                    🧪 Demo-Modus
+                </label>
+                <button id="hub-ical-btn" onclick="lpShowIcalInfo()"
+                    style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 12px;font-size:11px;color:var(--text-muted);cursor:pointer;font-family:var(--font);">📅
+                    Apple Kalender</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     LERNÜBERSICHT APP
+═══════════════════════════════════════════════ -->
+    <div id="lernuebersicht-app" class="sub-app">
+        <header class="app-header safe-top">
+            <div class="header-top">
+                <div class="header-brand">
+                    <button class="back-btn" id="back-from-lern" title="Zurück zum Hub">‹</button>
+                    <div class="header-logo">📚</div>
+                    <div>
+                        <div class="header-title">Lernübersicht</div>
+                        <button class="semester-picker" id="semester-picker" title="Semester wechseln">
+                            <span id="semester-label">SS 26</span>
+                            <span class="semester-chevron">⌄</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="btn-logout" title="Ausloggen">🔒</button>
+                </div>
+            </div>
+            <div class="last-updated" id="last-updated-bar">
+                <div class="status-dot"></div>
+                <span id="last-updated-text">Lade Daten...</span>
+            </div>
+        </header>
+
+        <div id="refresh-bar">
+            <div class="refresh-label" id="refresh-label">Aktualisiere...</div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="content" id="subjects-view">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-subjects">–</div>
+                    <div class="stat-label">Fächer</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-lectures">–</div>
+                    <div class="stat-label">Vorlesung.</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-topics">–</div>
+                    <div class="stat-label">Themen</div>
+                </div>
+            </div>
+
+            <div class="actions-row">
+                <button class="action-btn btn-refresh" id="btn-refresh">
+                    <span class="btn-icon" id="refresh-icon">🔄</span>
+                    <span>Aktualisieren</span>
+                </button>
+                <button class="action-btn btn-summary" id="btn-summary">
+                    <span class="btn-icon">📄</span>
+                    <span>Lernplan PDF</span>
+                </button>
+            </div>
+            <div class="actions-row" style="margin-bottom:20px;">
+                <button class="action-btn btn-stats" id="btn-stats" style="grid-column:1/-1;">
+                    <span class="btn-icon">📊</span>
+                    <span>Quellen &amp; Statistik (PDF)</span>
+                </button>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">Meine Fächer</div>
+                <div class="section-badge" id="subjects-count">0</div>
+            </div>
+
+            <div class="subjects-grid" id="subjects-grid">
+                <div class="subject-card skeleton" style="height:80px;"></div>
+                <div class="subject-card skeleton" style="height:80px; opacity:0.7;"></div>
+                <div class="subject-card skeleton" style="height:80px; opacity:0.4;"></div>
+            </div>
+        </div>
+
+        <div class="content" id="week-view">
+            <div class="section-header" style="margin-top:16px;">
+                <div class="section-title">Wochenplan</div>
+            </div>
+            <div class="week-timeline" id="week-timeline"></div>
+        </div>
+
+        <div class="content" id="settings-view">
+            <div style="padding-top:16px;">
+                <div class="settings-group-title" style="padding:0 4px 8px;">Plattformen</div>
+                <div id="platform-cards"></div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title">Sicherheit</div>
+                    <div class="settings-item" id="btn-change-pin">
+                        <div class="settings-item-left">
+                            <div class="settings-item-icon" style="background:rgba(91,141,239,0.15);">🔐</div>
+                            <div>
+                                <div class="settings-item-label">PIN ändern</div>
+                                <div class="settings-item-desc">Zugangs-PIN aktualisieren</div>
+                            </div>
+                        </div>
+                        <span class="settings-chevron">›</span>
+                    </div>
+                    <div class="settings-item" id="btn-clear-cache">
+                        <div class="settings-item-left">
+                            <div class="settings-item-icon" style="background:rgba(251,146,60,0.15);">🗑️</div>
+                            <div>
+                                <div class="settings-item-label">Cache leeren</div>
+                                <div class="settings-item-desc">Alle gespeicherten Daten löschen</div>
+                            </div>
+                        </div>
+                        <span class="settings-chevron">›</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title">Entwickler</div>
+                    <div class="settings-item toggle-item">
+                        <div class="settings-item-left">
+                            <div class="settings-item-icon" style="background:rgba(168,85,247,0.15);">🧪</div>
+                            <div>
+                                <div class="settings-item-label">Demo-Modus</div>
+                                <div class="settings-item-desc">Dummy-Daten anzeigen (für Showcase)</div>
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-demo">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title">Info</div>
+                    <div class="settings-item" style="cursor:default;">
+                        <div class="settings-item-left">
+                            <div class="settings-item-icon" style="background:rgba(52,211,153,0.15);">ℹ️</div>
+                            <div>
+                                <div class="settings-item-label">Über die App</div>
+                                <div class="settings-item-desc">TüTool 2.0 · Tübingen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Semester Dropdown -->
+        <div class="semester-dropdown" id="semester-dropdown" aria-hidden="true">
+            <div class="semester-dropdown-inner">
+                <div class="semester-dropdown-title">Semester wählen</div>
+                <button class="semester-option active" data-key="ss26">
+                    <span class="semester-option-icon">☀️</span>
+                    <span class="semester-option-label">SS 26</span>
+                    <span class="semester-option-sub">April – Juli 2026</span>
+                    <span class="semester-option-check" id="check-ss26">✓</span>
+                </button>
+                <button class="semester-option" data-key="ws2627">
+                    <span class="semester-option-icon">❄️</span>
+                    <span class="semester-option-label">WS 26/27</span>
+                    <span class="semester-option-sub">Okt. 2026 – Feb. 2027</span>
+                    <span class="semester-option-check" id="check-ws2627"></span>
+                </button>
+                <button class="semester-option" data-key="ss27">
+                    <span class="semester-option-icon">☀️</span>
+                    <span class="semester-option-label">SS 27</span>
+                    <span class="semester-option-sub">April – Juli 2027</span>
+                    <span class="semester-option-check" id="check-ss27"></span>
+                </button>
+                <button class="semester-option" data-key="ws2728">
+                    <span class="semester-option-icon">❄️</span>
+                    <span class="semester-option-label">WS 27/28</span>
+                    <span class="semester-option-sub">Okt. 2027 – Feb. 2028</span>
+                    <span class="semester-option-check" id="check-ws2728"></span>
+                </button>
+            </div>
+        </div>
+        <div class="semester-overlay" id="semester-overlay"></div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="subjects">
+                <span class="nav-icon">📚</span>
+                <span class="nav-label">Fächer</span>
+            </button>
+            <button class="nav-item" data-view="week">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Wochen</span>
+            </button>
+            <button class="nav-item" data-view="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Einstellungen</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     STUNDENPLAN APP
+═══════════════════════════════════════════════ -->
+    <div id="stundenplan-app" class="sub-app">
+        <header class="app-header safe-top">
+            <div class="header-top">
+                <div class="header-brand">
+                    <button class="back-btn" id="back-from-stundenplan" title="Zurück zum Hub">‹</button>
+                    <div class="header-logo">📅</div>
+                    <div>
+                        <div class="header-title">Stundenplan</div>
+                        <div class="header-subtitle" id="sp-week-label">Aktuelle Woche</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="sp-btn-refresh" title="Aktualisieren">🔄</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Week navigation bar -->
+        <div class="sp-week-nav safe-top-offset">
+            <button class="sp-week-btn" id="sp-prev-week" title="Vorherige Woche">‹</button>
+            <div class="sp-week-info">
+                <div class="sp-week-title" id="sp-week-title">Woche lädt...</div>
+                <div class="sp-week-dates" id="sp-week-dates"></div>
+            </div>
+            <button class="sp-week-btn" id="sp-next-week" title="Nächste Woche">›</button>
+        </div>
+
+        <!-- Timetable content -->
+        <div class="sp-content" id="sp-content">
+            <!-- Filled by JS -->
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-sp-view="week">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Diese Woche</span>
+            </button>
+            <button class="nav-item" data-sp-view="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">E-Mail &amp; Info</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     LERNPLAN APP
+═══════════════════════════════════════════════ -->
+    <div id="lernplan-app" class="sub-app">
+        <header class="app-header safe-top">
+            <div class="header-top">
+                <div class="header-brand">
+                    <button class="back-btn" id="back-from-lernplan" title="Zurück zum Hub">‹</button>
+                    <div class="header-logo">🎯</div>
+                    <div>
+                        <div class="header-title">Lernplan</div>
+                        <div style="font-size:11px;color:var(--text-muted);">Prüfungsplanung</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="lp-tabs">
+            <button class="lp-tab active" data-tab="calendar">📅 Kalender</button>
+            <button class="lp-tab" data-tab="exams">🎯 Prüfungen</button>
+        </div>
+        <!-- Kalender Tab -->
+        <div class="lp-tab-content visible" data-tab="calendar">
+            <div class="lp-week-nav">
+                <button class="lp-week-btn" id="lp-prev-week">‹</button>
+                <div class="lp-week-info">
+                    <div class="lp-week-title" id="lp-week-title">Woche 1</div>
+                    <div class="lp-week-dates" id="lp-week-dates"></div>
+                </div>
+                <button class="lp-week-btn" id="lp-next-week">›</button>
+            </div>
+            <div class="lp-calendar-content" id="lp-calendar-events"></div>
+        </div>
+        <!-- Prüfungen Tab -->
+        <div class="lp-tab-content" data-tab="exams">
+            <div class="lp-exam-list">
+                <div class="lp-exam-list-header">
+                    <div class="lp-exam-list-title">Meine Prüfungen</div>
+                    <button class="lp-new-exam-btn" id="lp-new-exam-btn">+ Prüfung anlegen</button>
+                </div>
+                <div id="lp-exams-list"></div>
+                <button class="lp-pdf-btn" id="lp-pdf-btn">📄 PDF Prüfungsübersicht exportieren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Neue Prüfung Modal -->
+    <div class="lp-modal-overlay" id="lp-modal">
+        <div class="lp-modal">
+            <div class="lp-modal-handle"></div>
+            <div class="lp-modal-title">Neue Prüfung anlegen</div>
+            <div class="lp-form">
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Fach</label>
+                    <select class="lp-form-select" id="lp-form-subject">
+                        <option value="">Fach wählen...</option>
+                    </select>
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Prüfungsdatum</label>
+                    <input type="date" class="lp-form-input" id="lp-form-date">
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">
+                        Themen
+                        <span id="lp-select-all" class="lp-select-all-btn" style="margin-left:12px;">Alle</span>
+                        <span id="lp-deselect-all" class="lp-select-all-btn"
+                            style="margin-left:8px;color:var(--text-muted);">Keine</span>
+                    </label>
+                    <div class="lp-topics-container" id="lp-topics-container">
+                        <div style="padding:12px 14px;color:var(--text-muted);font-size:13px;">Zuerst ein Fach wählen
+                        </div>
+                    </div>
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Eigene Themen hinzufügen</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" class="lp-form-input" id="lp-custom-topic-input"
+                            placeholder="z. B. Herzphysiologie" style="flex:1;"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();lpAddCustomTopic();}">
+                        <button type="button" onclick="lpAddCustomTopic()"
+                            style="background:var(--accent-blue);color:white;border:none;border-radius:var(--radius-md);padding:0 16px;font-size:15px;cursor:pointer;font-family:var(--font);flex-shrink:0;">+</button>
+                    </div>
+                    <div id="lp-custom-topics" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Notizen (optional)</label>
+                    <input type="text" class="lp-form-input" id="lp-form-notes"
+                        placeholder="z. B. Klausur im Hörsaal 1">
+                </div>
+            </div>
+            <div class="lp-modal-footer">
+                <button class="lp-modal-cancel" id="lp-modal-cancel">Abbrechen</button>
+                <button class="lp-modal-submit" id="lp-submit-btn">Prüfung anlegen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/timetable.js"></script>
+    <script src="/js/lernplan.js"></script>
+</body>
+
+</html>
