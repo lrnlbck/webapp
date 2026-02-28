@@ -123,11 +123,7 @@ app.get('/api/auth/portals', requireAuth, async (req, res) => {
 
 // ─── Data Routes ──────────────────────────────────────────────────────────
 app.get('/api/subjects', requireAuth, (req, res) => {
-    let data = req.query.demo === 'true' ? getDemoData() : loadCache();
-    if (!data || data.length === 0) {
-        data = getDemoData();
-        saveCache(data);
-    }
+    let data = req.query.demo === 'true' ? getDemoData() : (loadCache() || []);
 
     // Nach Fach gruppieren
     const grouped = {};
@@ -218,11 +214,7 @@ app.get('/api/stats/pdf', requireAuth, async (req, res) => {
 // ─── Timetable Routes ─────────────────────────────────────────────────────
 // GET /api/timetable?week=0  (0 = aktuelle Woche, +1/-1 = vor/zurück)
 app.get('/api/timetable', requireAuth, (req, res) => {
-    let events = req.query.demo === 'true' ? getDemoTimetable() : loadTimetableCache();
-    if (!events || events.length === 0) {
-        events = getDemoTimetable();
-        saveTimetableCache(events);
-    }
+    let events = req.query.demo === 'true' ? getDemoTimetable() : (loadTimetableCache() || []);
     const weekOffset = parseInt(req.query.week || '0');
     const semKey = req.query.semester || 'ss26';
     const semStarts = {
@@ -236,8 +228,7 @@ app.get('/api/timetable', requireAuth, (req, res) => {
 });
 
 app.get('/api/timetable/all', requireAuth, (req, res) => {
-    let events = loadTimetableCache();
-    if (!events || events.length === 0) events = getDemoTimetable();
+    let events = req.query.demo === 'true' ? getDemoTimetable() : (loadTimetableCache() || []);
     res.json({ events, lastUpdated: getTimetableMeta().lastUpdated });
 });
 
@@ -412,13 +403,6 @@ app.listen(PORT, '0.0.0.0', () => {
 
     // Scheduler starten (tägliche Aktualisierung)
     startScheduler();
-
-    // Initiale Demo-Daten laden falls Cache leer
-    if (!loadCache()) {
-        const demo = getDemoData();
-        saveCache(demo);
-        console.log('📊 Demo-Daten geladen (konfiguriere .env für echte Plattform-Daten)');
-    }
 });
 
 module.exports = app;
