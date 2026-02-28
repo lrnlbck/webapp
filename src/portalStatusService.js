@@ -27,25 +27,36 @@ async function checkIlias() {
             return cfg;
         });
 
-        // Schritt 1: ILIAS aufrufen
-        const step1Url = `${ILIAS_BASE}/ilias3/ilias.php?lang=de&cmd=force_login&baseClass=ilStartUpGUI`;
-        console.log(`🔍 ILIAS Check Schritt 1: GET ${step1Url}`);
-        const r1 = await client.get(step1Url);
-        console.log(`🔍 ILIAS Schritt 1 Status: ${r1.status}, URL nach Redirects: ${r1.request?.res?.responseUrl || '?'}`);
-        console.log(`🔍 ILIAS Schritt 1 HTML-Anfang: ${r1.data.substring(0, 400)}`);
+        // Schritt 1: Shibboleth SP direkt ansprechen → löst SAML2-Redirect zum IDP aus
+        // (force_login funktioniert nicht von externen Servern – gibt "Kein Zugriffsrecht")
+        const shibUrl = `${ILIAS_BASE}/Shibboleth.sso/Login?target=https%3A%2F%2F${ILIAS_BASE.replace('https://', '')}%2Filias3%2F`;
+        console.log(`🔍 ILIAS Check Schritt 1: GET ${shibUrl}`);
+        let r1 = await client.get(shibUrl);
+        console.log(`🔍 ILIAS Schritt 1 Status: ${r1.status}, URL: ${r1.request?.res?.responseUrl || shibUrl}`);
+
+        // Fallback: shib_login.php
+        if (r1.status >= 400 || !r1.data.includes('idp') && !r1.data.includes('form')) {
+            const fallbackUrl = `${ILIAS_BASE}/ilias3/shib_login.php`;
+            console.log(`🔍 ILIAS Fallback: GET ${fallbackUrl}`);
+            r1 = await client.get(fallbackUrl);
+            console.log(`🔍 ILIAS Fallback Status: ${r1.status}`);
+        }
+
+        console.log(`🔍 ILIAS HTML-Anfang: ${r1.data.substring(0, 300)}`);
 
         const $idp = cheerio.load(r1.data);
         const idpForm = $idp('form').first();
         const idpAction = idpForm.attr('action');
-        console.log(`🔍 ILIAS IDP-Form action: ${idpAction || 'NICHT GEFUNDEN'}`);
-        console.log(`🔍 ILIAS Alle Forms auf Seite: ${$idp('form').length}`);
+        console.log(`🔍 ILIAS IDP-Form action: ${idpAction || 'NICHT GEFUNDEN'}, Forms: ${$idp('form').length}`);
 
         if (!idpAction) {
-            console.error('❌ ILIAS: IDP Login-Formular nicht gefunden. Response HTML:', r1.data.substring(0, 600));
+            console.error('❌ ILIAS: IDP Login-Form nicht gefunden. Response:', r1.data.substring(0, 500));
             return 'error';
         }
 
-        const idpPostUrl = idpAction.startsWith('http') ? idpAction : `${IDP_BASE}${idpAction}`;
+        const idpPostUrl = idpAction.startsWith('http') ? idpAction :
+            idpAction.startsWith('/idp/') ? `${IDP_BASE}${idpAction}` :
+                `${IDP_BASE}${idpAction}`;
         const idpParams = new URLSearchParams();
         idpParams.append('j_username', process.env.ILIAS_USER);
         idpParams.append('j_password', process.env.ILIAS_PASS || '');
