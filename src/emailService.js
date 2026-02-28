@@ -4,7 +4,7 @@
  */
 const { Resend } = require('resend');
 const { generateWeeklyTimetablePDF } = require('./weeklyTimetablePdf');
-const { loadTimetableCache } = require('./timetableService');
+// Note: loadTimetableCache is required inline inside sendChangeMail() to avoid circular dependency
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'not_configured');
 
@@ -91,6 +91,7 @@ async function sendChangeMail(diff) {
     // Aktuellen Wochenplan als PDF-Anhang generieren
     let attachments = [];
     try {
+      const { loadTimetableCache } = require('./timetableService'); // inline to avoid circular dep
       const allEvents = loadTimetableCache() || [];
       const now = new Date();
       const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;

@@ -98,18 +98,39 @@ async function checkAlma() {
 async function checkMoodle() {
     if (!process.env.MOODLE_USER || process.env.MOODLE_USER === 'dein_benutzername') {
         if (!process.env.MOODLE_TOKEN) return 'not_configured';
-        return 'connected'; // If we have an API token, we assume it's valid for now
+        return 'connected';
     }
     try {
         const baseURL = process.env.MOODLE_URL || 'https://moodle.zdv.uni-tuebingen.de';
-        const client = axios.create({ baseURL, timeout: 10000 });
+        const cookieJar = {};
+        const client = axios.create({ baseURL, timeout: 15000, maxRedirects: 10, validateStatus: s => s < 500 });
+        client.interceptors.response.use(r => {
+            (r.headers['set-cookie'] || []).forEach(c => {
+                const [kv] = c.split(';');
+                const idx = kv.indexOf('=');
+                if (idx > 0) cookieJar[kv.slice(0, idx).trim()] = kv.slice(idx + 1).trim();
+            });
+            return r;
+        });
+        client.interceptors.request.use(cfg => {
+            const cs = Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join('; ');
+            if (cs) cfg.headers['Cookie'] = cs;
+            return cfg;
+        });
+
         const loginPage = await client.get('/login/index.php');
         const $ = cheerio.load(loginPage.data);
         const loginToken = $('input[name="logintoken"]').val() || '';
+
         const res = await client.post('/login/index.php', new URLSearchParams({
-            username: process.env.MOODLE_USER, password: process.env.MOODLE_PASS, logintoken: loginToken
+            username: process.env.MOODLE_USER,
+            password: process.env.MOODLE_PASS,
+            logintoken: loginToken,
+            anchor: ''
         }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-        const success = res.data.includes('logout.php') || res.data.includes('user/profile.php');
+
+        const success = res.data.includes('logout.php') || res.data.includes('user/profile.php')
+            || Object.keys(cookieJar).some(k => k.toLowerCase().includes('moodle'));
         if (!success) console.warn('⚠️  MOODLE: Login fehlgeschlagen. Seitenanfang:', res.data.substring(0, 200));
         return success ? 'connected' : 'error';
     } catch (e) {
