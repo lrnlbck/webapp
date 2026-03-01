@@ -439,9 +439,8 @@
             <div class="lp-form">
                 <div class="lp-form-group">
                     <label class="lp-form-label">Fach</label>
-                    <select class="lp-form-select" id="lp-form-subject">
-                        <option value="">Fach wählen...</option>
-                    </select>
+                    <input type="text" class="lp-form-input" id="lp-form-subject" list="lp-subjects-list" placeholder="Fach wählen oder eingeben..." autocomplete="off">
+                    <datalist id="lp-subjects-list"></datalist>
                 </div>
                 <div class="lp-form-group">
                     <label class="lp-form-label">Prüfungsdatum</label>

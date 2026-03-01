@@ -289,9 +289,12 @@ async function lpOpenNewExamForm() {
     }
 
     // Fach-Dropdown füllen
-    const select = document.getElementById('lp-form-subject');
-    select.innerHTML = '<option value="">Fach wählen...</option>' +
-        lpState.subjectsForForm.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    const input = document.getElementById('lp-form-subject');
+    input.value = '';
+    const datalist = document.getElementById('lp-subjects-list');
+    if (datalist) {
+        datalist.innerHTML = lpState.subjectsForForm.map(s => `<option value="${s.name}">`).join('');
+    }
 
     // Topics + custom topics leeren
     document.getElementById('lp-topics-container').innerHTML = '<div style="padding:10px 14px;color:var(--text-muted);font-size:13px;">Zuerst ein Fach wählen</div>';
@@ -448,7 +451,7 @@ function initLernplan() {
     document.getElementById('lp-new-exam-btn')?.addEventListener('click', lpOpenNewExamForm);
     document.getElementById('lp-modal-cancel')?.addEventListener('click', lpCloseModal);
     document.getElementById('lp-submit-btn')?.addEventListener('click', lpSubmitExam);
-    document.getElementById('lp-form-subject')?.addEventListener('change', lpOnSubjectChange);
+    document.getElementById('lp-form-subject')?.addEventListener('input', lpOnSubjectChange);
     document.getElementById('lp-select-all')?.addEventListener('click', () => lpSelectAllTopics(true));
     document.getElementById('lp-deselect-all')?.addEventListener('click', () => lpSelectAllTopics(false));
     document.getElementById('lp-pdf-btn')?.addEventListener('click', lpDownloadPDF);
