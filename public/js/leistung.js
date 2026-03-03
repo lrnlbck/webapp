@@ -109,6 +109,19 @@ function lsUpdateOverallStats() {
     document.getElementById('ls-total-points').textContent = lsState.grades.length;
 }
 
+function lsGetCurrentSemesterKey() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const isWS = month >= 10 || month <= 3;
+    const semYear = month <= 3 ? year - 1 : year;
+    if (isWS) {
+        return `ws${semYear.toString().substring(2)}${(semYear + 1).toString().substring(2)}`;
+    } else {
+        return `ss${semYear.toString().substring(2)}`;
+    }
+}
+
 function lsRenderSemesters() {
     const container = document.getElementById('ls-semester-list');
     if (!container) return;
@@ -120,12 +133,27 @@ function lsRenderSemesters() {
         bySem[g.semester].push(g);
     });
 
-    container.innerHTML = LS_SEMESTERS.map(sem => {
+    const currentKey = lsGetCurrentSemesterKey();
+
+    // Aktuelles Semester nach ganz oben sortieren
+    const sortedSemesters = [...LS_SEMESTERS].sort((a, b) => {
+        if (a.key === currentKey) return -1;
+        if (b.key === currentKey) return 1;
+        return 0; // maintain original order otherwise
+    });
+
+    container.innerHTML = sortedSemesters.map(sem => {
         const semesterGrades = bySem[sem.key] || [];
         const avg = lsCalcAvg(semesterGrades);
+
+        const isCurrent = sem.key === currentKey;
+        const currentBadge = isCurrent ? `<div style="font-size:10px; color:var(--accent-blue); font-weight:700; text-transform:uppercase; margin-bottom:4px;">Aktuelles Semester</div>` : '';
+        const cardStyle = isCurrent ? `border: 1px solid var(--accent-blue); background: rgba(91, 141, 239, 0.05);` : '';
+
         return `
-        <div class="ls-semester-card" onclick="lsOpenSemester('${sem.key}')">
+        <div class="ls-semester-card" style="${cardStyle}" onclick="lsOpenSemester('${sem.key}')">
             <div>
+                ${currentBadge}
                 <div class="ls-semester-name">${sem.label}</div>
                 <div class="ls-semester-meta">${semesterGrades.length} Noten eingetragen</div>
             </div>
