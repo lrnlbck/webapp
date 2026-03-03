@@ -25,6 +25,8 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/timetable.css">
     <link rel="stylesheet" href="/css/lernplan.css">
+    <link rel="stylesheet" href="/css/leistung.css">
+    <link rel="stylesheet" href="/css/leistungsuebersicht.css">
 </head>
 
 <body>
@@ -119,6 +121,16 @@
                 <div class="hub-card-content">
                     <div class="hub-card-title">Lernplan</div>
                     <div class="hub-card-desc">Prüfungen anlegen, Lernblöcke automatisch einplanen, PDF-Export</div>
+                </div>
+                <span class="hub-card-arrow">›</span>
+            </button>
+
+            <!-- Leistungsübersicht -->
+            <button class="hub-card" id="open-leistung">
+                <div class="hub-card-icon" style="background: linear-gradient(135deg,#3b82f6,#2dd4bf);">📈</div>
+                <div class="hub-card-content">
+                    <div class="hub-card-title">Leistungsübersicht</div>
+                    <div class="hub-card-desc">Noten pro Semester, Fächerschnitte & Gesamtdurchschnitt</div>
                 </div>
                 <span class="hub-card-arrow">›</span>
             </button>
@@ -483,9 +495,95 @@
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.6.7"></script>
-    <script src="/js/timetable.js?v=1.6.7"></script>
-    <script src="/js/lernplan.js?v=1.6.7"></script>
+    <!-- ═══════════════════════════════════════════════
+     LEISTUNGSÜBERSICHT APP
+    ═══════════════════════════════════════════════ -->
+    <div id="leistung-app" class="sub-app">
+        <header class="app-header safe-top">
+            <div class="header-top">
+                <div class="header-brand">
+                    <button class="back-btn" id="back-from-leistung" title="Zurück zum Hub">‹</button>
+                    <div class="header-logo">📈</div>
+                    <div>
+                        <div class="header-title">Leistungen</div>
+                        <div style="font-size:11px;color:var(--text-muted);">Notenübersicht</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="ls-tabs">
+            <button class="ls-tab active" data-tab="semesters">📊 Semester</button>
+            <button class="ls-tab" data-tab="subjects">🎓 Fächer</button>
+        </div>
+
+        <!-- Semester Tab -->
+        <div class="ls-tab-content visible" data-tab="semesters">
+            <div class="ls-stats-row">
+                <div class="ls-stat-card">
+                    <div class="ls-stat-label">Gesamtschnitt</div>
+                    <div class="ls-stat-value" id="ls-total-avg">–</div>
+                </div>
+                <div class="ls-stat-card">
+                    <div class="ls-stat-label">Gesamtnote</div>
+                    <div class="ls-stat-value" id="ls-total-points">–</div>
+                </div>
+            </div>
+            
+            <!-- Semesters List -->
+            <div class="ls-semester-list" id="ls-semester-list"></div>
+        </div>
+
+        <!-- Subjects Tab -->
+        <div class="ls-tab-content" data-tab="subjects">
+            <div class="ls-section-header">
+                Fächerschnitte (Semesterübergreifend)
+            </div>
+            <div id="ls-subjects-list"></div>
+        </div>
+
+        <!-- Semester Details Sheet -->
+        <div id="ls-semester-view" class="ls-semester-view">
+            <div class="ls-semester-view-header safe-top">
+                <button class="back-btn" id="ls-close-semester" title="Zurück">‹</button>
+                <div class="ls-semester-title" id="ls-active-semester-title">SS 26</div>
+                <button class="icon-btn" id="ls-add-grade" title="Note hinzufügen">+</button>
+            </div>
+            <div class="ls-semester-content" id="ls-semester-content"></div>
+        </div>
+    </div>
+
+    <!-- Neue Note Modal -->
+    <div class="lp-modal-overlay" id="ls-modal">
+        <div class="lp-modal">
+            <div class="lp-modal-handle"></div>
+            <div class="lp-modal-title">Neue Note eintragen</div>
+            <div class="lp-form">
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Fach</label>
+                    <input type="text" class="lp-form-input" id="ls-form-subject" list="ls-subjects-list" placeholder="Fach wählen oder eingeben..." autocomplete="off">
+                    <datalist id="ls-subjects-list"></datalist>
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Titel (z.B. Klausur 1, Seminar)</label>
+                    <input type="text" class="lp-form-input" id="ls-form-title" placeholder="Titel eingeben...">
+                </div>
+                <div class="lp-form-group">
+                    <label class="lp-form-label">Note / Wert (z.B. 1.0)</label>
+                    <input type="number" step="0.1" inputmode="decimal" class="lp-form-input" id="ls-form-value" placeholder="1.0">
+                </div>
+            </div>
+            <div class="lp-modal-footer">
+                <button class="lp-modal-cancel" id="ls-modal-cancel">Abbrechen</button>
+                <button class="lp-modal-submit" id="ls-submit-btn">Note speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js?v=1.6.8"></script>
+    <script src="/js/timetable.js?v=1.6.8"></script>
+    <script src="/js/lernplan.js?v=1.6.8"></script>
+    <script src="/js/leistung.js?v=1.0.0"></script>
 </body>
 
 </html>

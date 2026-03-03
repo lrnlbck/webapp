@@ -24,6 +24,7 @@ const {
     loadExams, createExam, updateExamStatus, toggleCalendar, deleteExam, getCalendarEvents
 } = require('./src/lernplanService');
 const { generateIcal } = require('./src/icalService');
+const { loadGrades, createGrade, deleteGrade, importGrades } = require('./src/leistungService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -307,6 +308,35 @@ app.get('/api/lernplan/pdf', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Lernplan PDF Fehler:', err.message);
         res.status(500).json({ error: 'PDF-Generierung fehlgeschlagen: ' + err.message });
+    }
+});
+
+// ─── Leistungsübersicht Routes ─────────────────────────────────────────────
+
+app.get('/api/leistung/grades', requireAuth, (req, res) => {
+    res.json(loadGrades());
+});
+
+app.post('/api/leistung/grades', requireAuth, (req, res) => {
+    try {
+        const grade = createGrade(req.body);
+        res.json(grade);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/leistung/grades/:id', requireAuth, (req, res) => {
+    deleteGrade(req.params.id);
+    res.json({ success: true });
+});
+
+app.post('/api/leistung/grades/import', requireAuth, (req, res) => {
+    try {
+        const count = importGrades(req.body.grades);
+        res.json({ restored: count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

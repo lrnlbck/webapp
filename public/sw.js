@@ -1,10 +1,12 @@
-const CACHE_NAME = 'lernplan-v1.6.7';
+const CACHE_NAME = 'lernplan-v1.7.0';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/css/styles.css',
     '/js/app.js',
-    '/manifest.json'
+    '/manifest.json',
+    '/css/leistung.css',
+    '/js/leistung.js'
 ];
 
 self.addEventListener('install', event => {
