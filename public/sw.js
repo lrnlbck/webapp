@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernplan-v1.7.4';
+const CACHE_NAME = 'lernplan-v1.7.5';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

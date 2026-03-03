@@ -115,11 +115,16 @@ function lsGetCurrentSemesterKey() {
     const month = now.getMonth() + 1;
     const isWS = month >= 10 || month <= 3;
     const semYear = month <= 3 ? year - 1 : year;
+
+    let key = '';
     if (isWS) {
-        return `ws${semYear.toString().substring(2)}${(semYear + 1).toString().substring(2)}`;
+        key = `ws${semYear.toString().substring(2)}${(semYear + 1).toString().substring(2)}`;
     } else {
-        return `ss${semYear.toString().substring(2)}`;
+        key = `ss${semYear.toString().substring(2)}`;
     }
+
+    const exists = LS_SEMESTERS.find(s => s.key === key);
+    return exists ? key : LS_SEMESTERS[0].key;
 }
 
 function lsRenderSemesters() {
