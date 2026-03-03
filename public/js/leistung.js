@@ -341,6 +341,7 @@ function initLeistung() {
 
     // Semester View
     document.getElementById('ls-close-semester')?.addEventListener('click', lsCloseSemester);
+    document.getElementById('ls-floating-back')?.addEventListener('click', lsCloseSemester);
     document.getElementById('ls-add-grade')?.addEventListener('click', lsOpenAddGradeModal);
 
     // Modal

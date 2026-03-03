@@ -162,7 +162,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding: max(env(safe-area-inset-top, 16px), 16px) 16px 16px 16px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
@@ -282,4 +282,32 @@
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 4px;
+}
+
+/* Floating Back Button */
+.ls-floating-back {
+    position: absolute;
+    bottom: max(env(safe-area-inset-bottom, 20px), 20px);
+    left: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.ls-floating-back:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.15);
 }
