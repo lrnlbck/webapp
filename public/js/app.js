@@ -118,6 +118,37 @@ function pinError(msg) {
     }, 800);
 }
 
+async function checkAppVersion(serverVersion) {
+    if (!serverVersion) return false;
+    const localVersion = localStorage.getItem('tuetool_cache_version');
+
+    // Wenn eine alte Version vorlag und nun eine neue kommt, lösche Cache
+    if (localVersion && localVersion !== serverVersion) {
+        console.log(`App Update erkannt: ${localVersion} -> ${serverVersion}`);
+        toast('Neues Update gefunden! Lade App neu...', 'info');
+
+        if ('caches' in window) {
+            try {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+            } catch (e) { console.error('Cache clear error', e); }
+        }
+        if ('serviceWorker' in navigator) {
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.unregister()));
+            } catch (e) { console.error('SW unregister error', e); }
+        }
+
+        localStorage.setItem('tuetool_cache_version', serverVersion);
+        setTimeout(() => window.location.reload(true), 1500);
+        return true;
+    } else if (!localVersion) {
+        localStorage.setItem('tuetool_cache_version', serverVersion);
+    }
+    return false;
+}
+
 async function submitPin() {
     const pin = state.pinInput;
     if (pin.length < 4) return;
@@ -129,7 +160,10 @@ async function submitPin() {
             if (data.firstSetup) {
                 toast(`🔐 PIN "${pin}" wurde gespeichert!`, 'success', 4000);
             }
-            unlockApp();
+            const isReloading = await checkAppVersion(data.version);
+            if (!isReloading) {
+                unlockApp();
+            }
         } else {
             pinError('Falscher PIN');
         }

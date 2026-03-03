@@ -5,6 +5,7 @@ const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const pkg = require('./package.json');
 
 const { verifyPin, setPinInEnv } = require('./src/auth');
 const { loadCache, saveCache, getCacheMeta } = require('./src/cache');
@@ -66,7 +67,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (appPin && appPin.trim() !== '') {
         if (pin === appPin) {
             req.session.authenticated = true;
-            return res.json({ success: true });
+            return res.json({ success: true, version: pkg.version });
         }
         return res.status(401).json({ error: 'Falscher PIN' });
     }
@@ -76,7 +77,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (/^\d{4,8}$/.test(pin)) {
             await setPinInEnv(pin);
             req.session.authenticated = true;
-            return res.json({ success: true, firstSetup: true, message: 'PIN gesetzt und eingeloggt!' });
+            return res.json({ success: true, firstSetup: true, message: 'PIN gesetzt und eingeloggt!', version: pkg.version });
         }
         return res.status(400).json({ error: 'PIN muss 4-8 Ziffern haben' });
     }
@@ -85,7 +86,7 @@ app.post('/api/auth/login', async (req, res) => {
         const valid = await verifyPin(pin, pinHash);
         if (valid) {
             req.session.authenticated = true;
-            return res.json({ success: true });
+            return res.json({ success: true, version: pkg.version });
         } else {
             return res.status(401).json({ error: 'Falscher PIN' });
         }

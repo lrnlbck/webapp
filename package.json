@@ -1,6 +1,6 @@
 {
   "name": "tuebingen-lernplan",
-  "version": "1.6.1",
+  "version": "1.8.0",
   "description": "TüTool App - Uni Tübingen",
   "main": "server.js",
   "scripts": {
