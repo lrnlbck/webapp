@@ -244,6 +244,18 @@ function lsRenderGradesInSemester() {
 // ═══════════════════════════════════════════════════════════════
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
+function lsPopulateSubjectsDatalist() {
+    const datalist = document.getElementById('ls-subjects-list');
+    if (!datalist) return;
+
+    // Combine subjects from API + locally saved grades
+    const apiSubjects = lsState.subjectsForForm.map(s => s.name);
+    const customSubjects = lsState.grades.map(g => g.subject);
+    const allUniqueSubjects = [...new Set([...apiSubjects, ...customSubjects])].filter(Boolean).sort();
+
+    datalist.innerHTML = allUniqueSubjects.map(name => `<option value="${escapeHtml(name)}">`).join('');
+}
+
 async function lsOpenAddGradeModal() {
     lsState.editingGradeId = null;
     document.querySelector('#ls-modal .lp-modal-title').textContent = 'Neue Note eintragen';
@@ -256,10 +268,7 @@ async function lsOpenAddGradeModal() {
         lsState.subjectsForForm = [];
     }
 
-    const datalist = document.getElementById('ls-subjects-list');
-    if (datalist) {
-        datalist.innerHTML = lsState.subjectsForForm.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
-    }
+    lsPopulateSubjectsDatalist();
 
     document.getElementById('ls-form-subject').value = '';
     document.getElementById('ls-form-title').value = '';
@@ -282,10 +291,7 @@ async function lsOpenEditGradeModal(id) {
     } catch {
         lsState.subjectsForForm = [];
     }
-    const datalist = document.getElementById('ls-subjects-list');
-    if (datalist) {
-        datalist.innerHTML = lsState.subjectsForForm.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
-    }
+    lsPopulateSubjectsDatalist();
 
     document.getElementById('ls-form-subject').value = grade.subject;
     document.getElementById('ls-form-title').value = grade.title;
