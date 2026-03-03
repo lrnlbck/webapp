@@ -7,7 +7,8 @@ const lsState = {
     grades: [],
     activeTab: 'semesters',
     selectedSemester: null,
-    subjectsForForm: []
+    subjectsForForm: [],
+    editingGradeId: null
 };
 
 // 12 Fachsemester ab SS26
@@ -201,6 +202,7 @@ function lsRenderGradesInSemester() {
 
     container.innerHTML = grades.map(g => `
     <div class="ls-grade-card">
+        <button class="ls-edit-grade" onclick="lsOpenEditGradeModal('${g.id}')">✎</button>
         <button class="ls-delete-grade" onclick="lsDeleteGrade('${g.id}')">✕</button>
         <div class="ls-grade-info">
             <div class="ls-grade-subject">${escapeHtml(g.subject)}</div>
@@ -215,6 +217,9 @@ function lsRenderGradesInSemester() {
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
 async function lsOpenAddGradeModal() {
+    lsState.editingGradeId = null;
+    document.querySelector('#ls-modal .lp-modal-title').textContent = 'Neue Note eintragen';
+
     // Fächer aus der Lernübersicht laden für die Datalist (wie im Lernplan)
     try {
         const data = await api('GET', '/api/subjects');
@@ -225,12 +230,38 @@ async function lsOpenAddGradeModal() {
 
     const datalist = document.getElementById('ls-subjects-list');
     if (datalist) {
-        datalist.innerHTML = lsState.subjectsForForm.map(s => `<option value="${s.name}">`).join('');
+        datalist.innerHTML = lsState.subjectsForForm.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
     }
 
     document.getElementById('ls-form-subject').value = '';
     document.getElementById('ls-form-title').value = '';
     document.getElementById('ls-form-value').value = '';
+
+    document.getElementById('ls-modal').classList.add('open');
+}
+
+async function lsOpenEditGradeModal(id) {
+    const grade = lsState.grades.find(g => g.id === id);
+    if (!grade) return;
+
+    lsState.editingGradeId = id;
+    document.querySelector('#ls-modal .lp-modal-title').textContent = 'Note bearbeiten';
+
+    // Fächer laden
+    try {
+        const data = await api('GET', '/api/subjects');
+        lsState.subjectsForForm = data.subjects || [];
+    } catch {
+        lsState.subjectsForForm = [];
+    }
+    const datalist = document.getElementById('ls-subjects-list');
+    if (datalist) {
+        datalist.innerHTML = lsState.subjectsForForm.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
+    }
+
+    document.getElementById('ls-form-subject').value = grade.subject;
+    document.getElementById('ls-form-title').value = grade.title;
+    document.getElementById('ls-form-value').value = grade.value;
 
     document.getElementById('ls-modal').classList.add('open');
 }
@@ -252,14 +283,23 @@ async function lsSubmitGrade() {
     btn.disabled = true;
 
     try {
-        await api('POST', '/api/leistung/grades', {
-            semester: lsState.selectedSemester,
-            subject,
-            title,
-            value: parseFloat(value)
-        });
+        if (lsState.editingGradeId) {
+            await api('PATCH', `/api/leistung/grades/${lsState.editingGradeId}`, {
+                subject,
+                title,
+                value: parseFloat(value)
+            });
+            toast('✅ Note bearbeitet!', 'success');
+        } else {
+            await api('POST', '/api/leistung/grades', {
+                semester: lsState.selectedSemester,
+                subject,
+                title,
+                value: parseFloat(value)
+            });
+            toast('✅ Note gespeichert!', 'success');
+        }
 
-        toast('✅ Note gespeichert!', 'success');
         lsCloseModal();
         await lsLoadGrades();
     } catch (err) {

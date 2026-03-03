@@ -45,6 +45,17 @@ function deleteGrade(id) {
     saveGrades(grades);
 }
 
+function updateGrade(id, gradeData) {
+    let grades = loadGrades();
+    const idx = grades.findIndex(g => g.id === id);
+    if (idx === -1) return null;
+    if (gradeData.subject !== undefined) grades[idx].subject = gradeData.subject;
+    if (gradeData.title !== undefined) grades[idx].title = gradeData.title;
+    if (gradeData.value !== undefined) grades[idx].value = parseFloat(gradeData.value) || 0;
+    saveGrades(grades);
+    return grades[idx];
+}
+
 function importGrades(incomingGrades) {
     if (!Array.isArray(incomingGrades) || incomingGrades.length === 0) return 0;
     const existing = loadGrades();
@@ -56,6 +67,7 @@ function importGrades(incomingGrades) {
 module.exports = {
     loadGrades,
     createGrade,
+    updateGrade,
     deleteGrade,
     importGrades
 };

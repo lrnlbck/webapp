@@ -24,7 +24,7 @@ const {
     loadExams, createExam, updateExamStatus, toggleCalendar, deleteExam, getCalendarEvents
 } = require('./src/lernplanService');
 const { generateIcal } = require('./src/icalService');
-const { loadGrades, createGrade, deleteGrade, importGrades } = require('./src/leistungService');
+const { loadGrades, createGrade, deleteGrade, importGrades, updateGrade } = require('./src/leistungService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -320,6 +320,16 @@ app.get('/api/leistung/grades', requireAuth, (req, res) => {
 app.post('/api/leistung/grades', requireAuth, (req, res) => {
     try {
         const grade = createGrade(req.body);
+        res.json(grade);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.patch('/api/leistung/grades/:id', requireAuth, (req, res) => {
+    try {
+        const grade = updateGrade(req.params.id, req.body);
+        if (!grade) return res.status(404).json({ error: 'Grade not found' });
         res.json(grade);
     } catch (err) {
         res.status(500).json({ error: err.message });
