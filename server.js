@@ -6,6 +6,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const pkg = require('./package.json');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const { verifyPin, setPinInEnv } = require('./src/auth');
 const { loadCache, saveCache, getCacheMeta } = require('./src/cache');
@@ -32,6 +34,7 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ────────────────────────────────────────────────────────────
 app.use(cors());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -44,8 +47,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         secure: isProd,
+        httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
+        sameSite: 'strict'
     } // 24h
 }));
 
@@ -56,7 +60,16 @@ function requireAuth(req, res, next) {
 }
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────
-app.post('/api/auth/login', async (req, res) => {
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 Minuten
+    max: 20, // max 20 Versuche pro IP
+    message: { error: 'Zu viele Login-Versuche. Bitte in 15 Minuten erneut versuchen.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
     const { pin } = req.body;
     if (!pin) return res.status(400).json({ error: 'PIN fehlt' });
 
