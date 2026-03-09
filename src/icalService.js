@@ -43,9 +43,9 @@ function generateIcal(timetableEvents = [], lernplanExams = []) {
         'METHOD:PUBLISH',
     ];
 
-    const addEvent = ({ id, date, timeFrom, timeTo, title, location, lecturer, mandatory, description }) => {
+    const addEvent = ({ id, date, timeFrom, timeTo, title, location, lecturer, mandatory, description, url }) => {
         const dtstart = dtFormat(date, timeFrom);
-        const dtend = timeTo ? dtFormat(date, timeTo) : dtFormat(date, timeFrom); // fallback = same time
+        const dtend = timeTo ? dtFormat(date, timeTo) : dtFormat(date, timeFrom);
         const desc = [
             location ? `Ort: ${location}` : '',
             lecturer ? `Dozent: ${lecturer}` : '',
@@ -61,6 +61,7 @@ function generateIcal(timetableEvents = [], lernplanExams = []) {
             `DTEND:${dtend}`,
             `SUMMARY:${escIcal(title)}`,
             location ? `LOCATION:${escIcal(location)}` : null,
+            url ? `URL:${url}` : null,
             desc ? `DESCRIPTION:${escIcal(desc)}` : null,
             mandatory ? 'CATEGORIES:Pflicht' : null,
             'END:VEVENT'
@@ -76,12 +77,17 @@ function generateIcal(timetableEvents = [], lernplanExams = []) {
     for (const exam of lernplanExams) {
         if (exam.status !== 'upcoming') continue;
         try {
+            const mapsUrl = exam.location
+                ? `https://maps.google.com/maps?q=${encodeURIComponent(exam.location)}`
+                : null;
             addEvent({
                 id: exam.id,
                 date: exam.examDate,
                 timeFrom: '08:00',
                 timeTo: '12:00',
-                title: `🎯 Prüfung: ${exam.subject}`,
+                title: `Pruefung: ${exam.subject}`,
+                location: exam.location || '',
+                url: mapsUrl,
                 description: `Themen: ${(exam.selectedTopics || []).join(', ')}`,
                 mandatory: true
             });

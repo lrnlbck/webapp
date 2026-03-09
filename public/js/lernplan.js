@@ -216,6 +216,7 @@ function lpRenderExams() {
               <div>
                 <div class="lp-exam-card-subject">🎯 ${exam.subject}</div>
                 <div class="lp-exam-card-date">📅 ${examDate.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                ${exam.location ? `<div class="lp-exam-card-date" style="margin-top:2px;">📍 ${exam.location}</div>` : ''}
               </div>
             </div>
             <div class="lp-exam-card-meta">
@@ -301,6 +302,7 @@ async function lpOpenNewExamForm() {
     document.getElementById('lp-custom-topics').innerHTML = '';
     document.getElementById('lp-custom-topic-input').value = '';
     document.getElementById('lp-form-notes').value = '';
+    document.getElementById('lp-form-location').value = '';
     document.getElementById('lp-form-date').value = '';
 
     document.getElementById('lp-modal').classList.add('open');
@@ -383,13 +385,14 @@ async function lpSubmitExam() {
     if (selectedTopics.length === 0) { toast('Bitte mindestens ein Thema wählen oder eigene Themen eingeben', 'error'); return; }
 
     const notes = document.getElementById('lp-form-notes').value;
+    const location = document.getElementById('lp-form-location').value.trim();
 
     try {
         const btn = document.getElementById('lp-submit-btn');
         btn.disabled = true;
         btn.textContent = 'Wird erstellt…';
 
-        const exam = await api('POST', '/api/lernplan/exams', { subject, examDate, selectedTopics, notes });
+        const exam = await api('POST', '/api/lernplan/exams', { subject, examDate, selectedTopics, notes, location });
         toast(`🎯 Prüfung "${subject}" angelegt – ${exam.learnBlocks?.length || 0} Lernblöcke geplant!`, 'success', 5000);
         lpCloseModal();
         await lpLoadExams();
