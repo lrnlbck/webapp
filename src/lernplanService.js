@@ -139,18 +139,26 @@ function createExam(examData, timetableEvents = []) {
         id: generateId(),
         subject: examData.subject,
         examDate: examData.examDate,
+        location: examData.location || '',
         selectedTopics: examData.selectedTopics || [],
         notes: examData.notes || '',
-        status: 'upcoming', // upcoming | done | cancelled
+        status: 'upcoming',
         showInCalendar: true,
+        createLernplan: examData.createLernplan !== false, // Standard: true
         createdAt: new Date().toISOString()
     };
 
-    const { blocks, hoursNeeded, learnDaysNeeded, startDate } = generateLernplan(exam, timetableEvents);
-    exam.learnBlocks = blocks;
-    exam.hoursNeeded = hoursNeeded;
-    exam.learnDaysNeeded = learnDaysNeeded;
-    exam.learnStartDate = startDate;
+    if (exam.createLernplan && exam.selectedTopics.length > 0) {
+        const { blocks, hoursNeeded, learnDaysNeeded, startDate } = generateLernplan(exam, timetableEvents);
+        exam.learnBlocks = blocks;
+        exam.hoursNeeded = hoursNeeded;
+        exam.learnDaysNeeded = learnDaysNeeded;
+        exam.learnStartDate = startDate;
+    } else {
+        exam.learnBlocks = [];
+        exam.hoursNeeded = 0;
+        exam.learnDaysNeeded = 0;
+    }
 
     // Prüfungstermin selbst als Block hinzufügen
     exam.examBlock = {

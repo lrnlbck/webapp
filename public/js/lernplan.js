@@ -304,6 +304,9 @@ async function lpOpenNewExamForm() {
     document.getElementById('lp-form-notes').value = '';
     document.getElementById('lp-form-location').value = '';
     document.getElementById('lp-form-date').value = '';
+    // Lernplan-Toggle auf Standard (aktiv) stellen
+    const toggle = document.getElementById('lp-toggle-lernplan');
+    if (toggle) { toggle.checked = true; lpToggleLernplanSection(true); }
 
     document.getElementById('lp-modal').classList.add('open');
 }
@@ -340,6 +343,14 @@ function lpOnSubjectChange() {
 function lpSelectAllTopics(selectAll) {
     document.querySelectorAll('#lp-topics-container input[type="checkbox"]')
         .forEach(cb => cb.checked = selectAll);
+}
+
+// Toggle: Themen-Bereich ein-/ausblenden
+function lpToggleLernplanSection(enabled) {
+    const section = document.getElementById('lp-lernplan-section');
+    if (section) {
+        section.style.display = enabled ? '' : 'none';
+    }
 }
 
 // ─── Custom Topic Chips ──────────────────────────────────────────
@@ -392,8 +403,11 @@ async function lpSubmitExam() {
         btn.disabled = true;
         btn.textContent = 'Wird erstellt…';
 
-        const exam = await api('POST', '/api/lernplan/exams', { subject, examDate, selectedTopics, notes, location });
-        toast(`🎯 Prüfung "${subject}" angelegt – ${exam.learnBlocks?.length || 0} Lernblöcke geplant!`, 'success', 5000);
+        const exam = await api('POST', '/api/lernplan/exams', { subject, examDate, selectedTopics, notes, location, createLernplan });
+        const msg = createLernplan
+            ? `🎯 Prüfung "${subject}" angelegt – ${exam.learnBlocks?.length || 0} Lernblöcke geplant!`
+            : `🎯 Prüfung "${subject}" im Kalender eingetragen!`;
+        toast(msg, 'success', 5000);
         lpCloseModal();
         await lpLoadExams();
         lpSaveToLocalStorage(lpState.exams);

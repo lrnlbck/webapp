@@ -463,33 +463,48 @@
                     <input type="text" class="lp-form-input" id="lp-form-location"
                         placeholder="z. B. Hörsaal 1, Wilhelmstr. 5, Tübingen">
                 </div>
-                <div class="lp-form-group">
-                    <label class="lp-form-label">
-                        Themen
-                        <span id="lp-select-all" class="lp-select-all-btn" style="margin-left:12px;">Alle</span>
-                        <span id="lp-deselect-all" class="lp-select-all-btn"
-                            style="margin-left:8px;color:var(--text-muted);">Keine</span>
+                <!-- Toggle: Lernplan erstellen -->
+                <div class="lp-form-group" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px 14px;">
+                    <div>
+                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">Lernplan erstellen</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Themen auswählen &amp; Lernblöcke automatisch planen</div>
+                    </div>
+                    <label class="switch" style="flex-shrink:0;">
+                        <input type="checkbox" id="lp-toggle-lernplan" checked onchange="lpToggleLernplanSection(this.checked)">
+                        <span class="slider round"></span>
                     </label>
-                    <div class="lp-topics-container" id="lp-topics-container">
-                        <div style="padding:12px 14px;color:var(--text-muted);font-size:13px;">Zuerst ein Fach wählen
+                </div>
+                <!-- Themen-Bereich (nur bei aktivem Lernplan) -->
+                <div id="lp-lernplan-section">
+                <div id="lp-lernplan-section">
+                    <div class="lp-form-group">
+                        <label class="lp-form-label">
+                            Themen
+                            <span id="lp-select-all" class="lp-select-all-btn" style="margin-left:12px;">Alle</span>
+                            <span id="lp-deselect-all" class="lp-select-all-btn"
+                                style="margin-left:8px;color:var(--text-muted);">Keine</span>
+                        </label>
+                        <div class="lp-topics-container" id="lp-topics-container">
+                            <div style="padding:12px 14px;color:var(--text-muted);font-size:13px;">Zuerst ein Fach wählen
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="lp-form-group">
-                    <label class="lp-form-label">Eigene Themen hinzufügen</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" class="lp-form-input" id="lp-custom-topic-input"
-                            placeholder="z. B. Herzphysiologie" style="flex:1;"
-                            onkeydown="if(event.key==='Enter'){event.preventDefault();lpAddCustomTopic();}">
-                        <button type="button" onclick="lpAddCustomTopic()"
-                            style="background:var(--accent-blue);color:white;border:none;border-radius:var(--radius-md);padding:0 16px;font-size:15px;cursor:pointer;font-family:var(--font);flex-shrink:0;">+</button>
+                    <div class="lp-form-group">
+                        <label class="lp-form-label">Eigene Themen hinzufügen</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" class="lp-form-input" id="lp-custom-topic-input"
+                                placeholder="z. B. Herzphysiologie" style="flex:1;"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();lpAddCustomTopic();}">
+                            <button type="button" onclick="lpAddCustomTopic()"
+                                style="background:var(--accent-blue);color:white;border:none;border-radius:var(--radius-md);padding:0 16px;font-size:15px;cursor:pointer;font-family:var(--font);flex-shrink:0;">+</button>
+                        </div>
+                        <div id="lp-custom-topics" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
                     </div>
-                    <div id="lp-custom-topics" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
-                </div>
-                <div class="lp-form-group">
-                    <label class="lp-form-label">Notizen (optional)</label>
-                    <input type="text" class="lp-form-input" id="lp-form-notes"
-                        placeholder="z. B. Klausur im Hörsaal 1">
+                    <div class="lp-form-group">
+                        <label class="lp-form-label">Notizen (optional)</label>
+                        <input type="text" class="lp-form-input" id="lp-form-notes"
+                            placeholder="z. B. Klausur im Hörsaal 1">
+                    </div>
                 </div>
             </div>
             <div class="lp-modal-footer">
