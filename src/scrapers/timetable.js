@@ -216,56 +216,56 @@ async function scrapeIliasTimetable() {
 }
 
 function parseTimeString(timeStr, dayStr) {
-                // Format: "Mo 08:15 - 09:45" oder "08:15-09:45"
-                const timeMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
-                const timeFrom = timeMatch ? timeMatch[1] : '';
-                const timeTo = timeMatch ? timeMatch[2] : '';
+    // Format: "Mo 08:15 - 09:45" oder "08:15-09:45"
+    const timeMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-\u2013]\s*(\d{1,2}:\d{2})/);
+    const timeFrom = timeMatch ? timeMatch[1] : '';
+    const timeTo = timeMatch ? timeMatch[2] : '';
 
-                const WEEKDAYS = { 'Mo': 1, 'Di': 2, 'Mi': 3, 'Do': 4, 'Fr': 5, 'Sa': 6, 'So': 0 };
-                const dayMatch = (dayStr + ' ' + timeStr).match(/Mo|Di|Mi|Do|Fr|Sa|So/);
-                const weekday = dayMatch ? (WEEKDAYS[dayMatch[0]] || 0) : 0;
+    const WEEKDAYS = { 'Mo': 1, 'Di': 2, 'Mi': 3, 'Do': 4, 'Fr': 5, 'Sa': 6, 'So': 0 };
+    const dayMatch = (dayStr + ' ' + timeStr).match(/Mo|Di|Mi|Do|Fr|Sa|So/);
+    const weekday = dayMatch ? (WEEKDAYS[dayMatch[0]] || 0) : 0;
 
-                // Datum berechnen (nächstes Vorkommen des Wochentags)
-                const now = new Date();
-                const curr = now.getDay();
-                const diff = (weekday - curr + 7) % 7;
-                const date = new Date(now);
-                date.setDate(now.getDate() + diff);
-                if(timeFrom) {
-                    const [h, m] = timeFrom.split(':');
-                    date.setHours(parseInt(h), parseInt(m), 0, 0);
-                }
+    // Datum berechnen (naechstes Vorkommen des Wochentags)
+    const now = new Date();
+    const curr = now.getDay();
+    const diff = (weekday - curr + 7) % 7;
+    const date = new Date(now);
+    date.setDate(now.getDate() + diff);
+    if (timeFrom) {
+        const [h, m] = timeFrom.split(':');
+        date.setHours(parseInt(h), parseInt(m), 0, 0);
+    }
 
     return { timeFrom, timeTo, weekday, date: date.toISOString() };
-            }
+}
 
 function guessSubject(title) {
-                    const SUBJECTS = ['Anatomie', 'Physiologie', 'Biochemie', 'Histologie', 'Biologie', 'Physik', 'Chemie', 'SIMED', 'Klinik', 'Medizin'];
-                    for (const s of SUBJECTS) {
-                        if (title.toLowerCase().includes(s.toLowerCase())) return s;
-                    }
-                    return 'Allgemein';
-                }
+    const SUBJECTS = ['Anatomie', 'Physiologie', 'Biochemie', 'Histologie', 'Biologie', 'Physik', 'Chemie', 'SIMED', 'Klinik', 'Medizin'];
+    for (const s of SUBJECTS) {
+        if (title.toLowerCase().includes(s.toLowerCase())) return s;
+    }
+    return 'Allgemein';
+}
 
 function isMandatory(title) {
-                    const keywords = ['pflicht', 'praktikum', 'prak', 'testat', 'schein', 'klausur', 'dissek', 'sezier'];
-                    return keywords.some(k => title.toLowerCase().includes(k));
-                }
+    const keywords = ['pflicht', 'praktikum', 'prak', 'testat', 'schein', 'klausur', 'dissek', 'sezier'];
+    return keywords.some(k => title.toLowerCase().includes(k));
+}
 
 function generateId(title, time, location = '', dateStr = '') {
-                    return Buffer.from(`${title}|${time}|${location}|${dateStr}`).toString('base64').substring(0, 24);
-                }
+    return Buffer.from(`${title}|${time}|${location}|${dateStr}`).toString('base64').substring(0, 24);
+}
 
 function deduplicate(events) {
-                    const seen = new Set();
-                    return events.filter(e => {
-                        const dateStr = e.date ? e.date.substring(0, 10) : '';
-                        const key = `${e.title}|${e.timeFrom}|${e.weekday}|${dateStr}`;
-                        if (seen.has(key)) return false;
-                        seen.add(key);
-                        return true;
-                    });
-                }
+    const seen = new Set();
+    return events.filter(e => {
+        const dateStr = e.date ? e.date.substring(0, 10) : '';
+        const key = `${e.title}|${e.timeFrom}|${e.weekday}|${dateStr}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
 
 // ─── Demo-Stundenplan ─────────────────────────────────────────────
 function getDemoTimetable() {
@@ -317,31 +317,32 @@ function getDemoTimetable() {
 
 // ─── Haupt-Export ─────────────────────────────────────────────────
 async function scrapeTimetable() {
-                    const anyConfigured =
-                        (process.env.ALMA_USER && process.env.ALMA_USER !== 'dein_benutzername') ||
-                        (process.env.MOODLE_USER && process.env.MOODLE_USER !== 'dein_benutzername') ||
-                        (process.env.ILIAS_USER && process.env.ILIAS_USER !== 'dein_benutzername');
+    const anyConfigured =
+        (process.env.ALMA_USER && process.env.ALMA_USER !== 'dein_benutzername') ||
+        (process.env.MOODLE_USER && process.env.MOODLE_USER !== 'dein_benutzername') ||
+        (process.env.ILIAS_USER && process.env.ILIAS_USER !== 'dein_benutzername') ||
+        !!process.env.ILIAS_ICAL_URL; // iCal-URL zaehlt auch als konfiguriert
 
-                    if (!anyConfigured) {
-                        console.log('📅 Stundenplan: Kein Portal konfiguriert – Demo-Daten werden verwendet.');
-                        return getDemoTimetable();
-                    }
+    if (!anyConfigured) {
+        console.log('Stundenplan: Kein Portal konfiguriert – Demo-Daten werden verwendet.');
+        return getDemoTimetable();
+    }
 
-                    const [alma, moodle, ilias] = await Promise.allSettled([
-                        scrapeAlmaTimetable(),
-                        scrapeMoodleTimetable(),
-                        scrapeIliasTimetable()
-                    ]);
+    const [alma, moodle, ilias] = await Promise.allSettled([
+        scrapeAlmaTimetable(),
+        scrapeMoodleTimetable(),
+        scrapeIliasTimetable()
+    ]);
 
-                    const all = [
-                        ...(alma.status === 'fulfilled' ? alma.value : []),
-                        ...(moodle.status === 'fulfilled' ? moodle.value : []),
-                        ...(ilias.status === 'fulfilled' ? ilias.value : [])
-                    ];
+    const all = [
+        ...(alma.status === 'fulfilled' ? alma.value : []),
+        ...(moodle.status === 'fulfilled' ? moodle.value : []),
+        ...(ilias.status === 'fulfilled' ? ilias.value : [])
+    ];
 
-                    const deduped = deduplicate(all);
-                    console.log(`📅 Stundenplan gesamt: ${deduped.length} Termine`);
-                    return deduped;
-                }
+    const deduped = deduplicate(all);
+    console.log(`Stundenplan gesamt: ${deduped.length} Termine`);
+    return deduped;
+}
 
 module.exports = { scrapeTimetable, getDemoTimetable };
