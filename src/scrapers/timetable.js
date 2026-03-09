@@ -59,20 +59,33 @@ async function scrapeAlmaTimetable() {
                     const dayStr = $s(cells[4] || cells[0]).text().trim();
 
                     if (title && title.length > 3) {
-                        const { timeFrom, timeTo, weekday, date } = parseTimeString(timeStr, dayStr);
-                        events.push({
-                            id: generateId(title, timeStr, location),
-                            title,
-                            timeFrom,
-                            timeTo,
-                            weekday,
-                            date,
-                            location,
-                            lecturer,
-                            subject: guessSubject(title),
-                            mandatory: isMandatory(title),
-                            platform: 'ALMA'
-                        });
+                        const { timeFrom, timeTo, weekday } = parseTimeString(timeStr, dayStr);
+                        const semStart = new Date('2026-04-20'); // SoSe 2026 Start
+
+                        for (let week = 0; week < 14; week++) {
+                            const eventDate = new Date(semStart);
+                            eventDate.setDate(semStart.getDate() + week * 7 + (weekday === 0 ? 6 : weekday - 1));
+
+                            if (timeFrom) {
+                                const [h, m] = timeFrom.split(':');
+                                eventDate.setHours(parseInt(h), parseInt(m), 0, 0);
+                            }
+
+                            events.push({
+                                id: generateId(title, timeStr, location, eventDate.toISOString().substring(0, 10)),
+                                title,
+                                timeFrom,
+                                timeTo,
+                                weekday,
+                                date: eventDate.toISOString(),
+                                location,
+                                lecturer,
+                                subject: guessSubject(title),
+                                mandatory: isMandatory(title),
+                                platform: 'ALMA',
+                                week: week + 1
+                            });
+                        }
                     }
                 }
             });
@@ -109,8 +122,9 @@ async function scrapeMoodleTimetable() {
             if (res?.data?.events) {
                 res.data.events.forEach(e => {
                     if (e.modulename !== 'assign') { // Keine Abgaben, nur echte Termine
+                        const dateIso = new Date(e.timestart * 1000).toISOString();
                         events.push({
-                            id: generateId(e.name, e.timestart),
+                            id: generateId(e.name, e.timestart.toString(), e.location || '', dateIso.substring(0, 10)),
                             title: e.name,
                             timeFrom: new Date(e.timestart * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
                             timeTo: e.timeduration ? new Date((e.timestart + e.timeduration) * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -180,12 +194,14 @@ async function scrapeIliasTimetable() {
             const title = $c(el).find('.ilCalendarLabel, .title').text().trim();
             const timeStr = $c(el).find('.time').text().trim();
             if (title && title.length > 2) {
+                // Determine implicit date if possible, else fallback to today
+                let eventDate = new Date().toISOString();
                 events.push({
-                    id: generateId(title, timeStr),
+                    id: generateId(title, timeStr, '', eventDate.substring(0, 10)),
                     title,
                     timeFrom: timeStr.split('-')[0]?.trim() || '',
                     timeTo: timeStr.split('-')[1]?.trim() || '',
-                    date: new Date().toISOString(),
+                    date: eventDate,
                     weekday: 0,
                     location: $c(el).find('.location').text().trim(),
                     lecturer: '',
@@ -242,14 +258,15 @@ function isMandatory(title) {
     return keywords.some(k => title.toLowerCase().includes(k));
 }
 
-function generateId(title, time, location = '') {
-    return Buffer.from(`${title}|${time}|${location}`).toString('base64').substring(0, 24);
+function generateId(title, time, location = '', dateStr = '') {
+    return Buffer.from(`${title}|${time}|${location}|${dateStr}`).toString('base64').substring(0, 24);
 }
 
 function deduplicate(events) {
     const seen = new Set();
     return events.filter(e => {
-        const key = `${e.title}|${e.timeFrom}|${e.weekday}`;
+        const dateStr = e.date ? e.date.substring(0, 10) : '';
+        const key = `${e.title}|${e.timeFrom}|${e.weekday}|${dateStr}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -285,7 +302,7 @@ function getDemoTimetable() {
             eventDate.setHours(parseInt(h), parseInt(m), 0, 0);
 
             events.push({
-                id: generateId(slot.title, slot.timeFrom, week.toString()),
+                id: generateId(slot.title, slot.timeFrom, slot.location, eventDate.toISOString().substring(0, 10)),
                 title: slot.title,
                 timeFrom: slot.timeFrom,
                 timeTo: slot.timeTo,
