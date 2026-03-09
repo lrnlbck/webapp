@@ -185,34 +185,56 @@ async function scrapeIliasTimetable() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
-        // Kalender-Seite
-        const calPage = await client.get('/ilias.php?baseClass=ilCalendarPresentationGUI&cmd=month');
-        const $c = cheerio.load(calPage.data);
+        // Kalender-Seiten für die nächsten 3 Monate abrufen
         const events = [];
+        for (let mOffset = 0; mOffset < 3; mOffset++) {
+            const d = new Date();
+            d.setMonth(d.getMonth() + mOffset);
+            const seedDate = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-01`;
 
-        $c('.ilCalendarAppointmentBg, .calendarRow').each((_, el) => {
-            const title = $c(el).find('.ilCalendarLabel, .title').text().trim();
-            const timeStr = $c(el).find('.time').text().trim();
-            if (title && title.length > 2) {
-                // Determine implicit date if possible, else fallback to today
-                let eventDate = new Date().toISOString();
-                events.push({
-                    id: generateId(title, timeStr, '', eventDate.substring(0, 10)),
-                    title,
-                    timeFrom: timeStr.split('-')[0]?.trim() || '',
-                    timeTo: timeStr.split('-')[1]?.trim() || '',
-                    date: eventDate,
-                    weekday: 0,
-                    location: $c(el).find('.location').text().trim(),
-                    lecturer: '',
-                    subject: guessSubject(title),
-                    mandatory: isMandatory(title),
-                    platform: 'ILIAS'
-                });
-            }
-        });
+            const calPage = await client.get(`/ilias.php?baseClass=ilCalendarPresentationGUI&cmd=month&seed=${seedDate}`);
+            const $c = cheerio.load(calPage.data);
 
-        console.log(`📅 ILIAS Kalender: ${events.length} Termine`);
+            $c('.ilCalendarAppointmentBg, .calendarRow').each((_, el) => {
+                const titleEl = $c(el).find('.ilCalendarLabel, .title');
+                const title = titleEl.text().trim();
+                const timeStr = $c(el).find('.time').text().trim();
+                const href = titleEl.attr('href') || $c(el).find('a').attr('href') || '';
+
+                if (title && title.length > 2) {
+                    // Datum aus dem Link extrahieren (z.B. seed=2026-04-04)
+                    let eventDate = new Date(); // Fallback auf heute
+                    const seedMatch = href.match(/seed=(\d{4}-\d{2}-\d{2})/);
+                    if (seedMatch) {
+                        eventDate = new Date(seedMatch[1]);
+                    }
+
+                    // Versuche exakte Uhrzeit zu setzen
+                    const fromTime = timeStr.split('-')[0]?.trim() || '';
+                    const toTime = timeStr.split('-')[1]?.trim() || '';
+                    if (fromTime) {
+                        const [h, m] = fromTime.split(':');
+                        if (h && m) eventDate.setHours(parseInt(h), parseInt(m), 0, 0);
+                    }
+
+                    events.push({
+                        id: generateId(title, timeStr, '', eventDate.toISOString().substring(0, 10)),
+                        title,
+                        timeFrom: fromTime,
+                        timeTo: toTime,
+                        date: eventDate.toISOString(),
+                        weekday: eventDate.getDay(),
+                        location: $c(el).find('.location').text().trim(),
+                        lecturer: '',
+                        subject: guessSubject(title),
+                        mandatory: isMandatory(title),
+                        platform: 'ILIAS'
+                    });
+                }
+            });
+        }
+
+        console.log(`📅 ILIAS Kalender: ${events.length} Termine über 3 Monate`);
         return events;
     } catch (err) {
         console.warn(`⚠️  ILIAS Kalender: ${err.message}`);
