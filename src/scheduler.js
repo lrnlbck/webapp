@@ -10,7 +10,6 @@ const schedule = require('node-schedule');
 const { runFullRefresh } = require('./refreshService');
 const { runTimetableRefresh, loadTimetableCache } = require('./timetableService');
 const { sendChangeMail, sendWeeklyOverview } = require('./emailService');
-const { cleanupSentFolder } = require('./mailCleanupService');
 
 const jobs = [];
 
@@ -55,19 +54,11 @@ function startScheduler() {
         } catch (e) { console.error('❌ Wochenausblick-Fehler:', e.message); }
     }));
 
-    // ── Mail-Cleanup: Sonntag 03:00 (Gesendet > 3 Monate loeschen) ───
-    jobs.push(schedule.scheduleJob('0 3 * * 0', async () => {
-        console.log(`\nMail-Cleanup: ${new Date().toLocaleString('de-DE')}`);
-        try { await cleanupSentFolder(); }
-        catch (e) { console.error('Mail-Cleanup Fehler:', e.message); }
-    }));
-
     console.log('Scheduler aktiv:');
     console.log('   Lernplan:       taeglich 07:00');
     console.log('   Stundenplan:    07:00 / 13:00 / 19:00');
     console.log('   Aenderungs-Mail: 06:00 / 21:00 (bei Aenderungen)');
     console.log('   Wochenausblick: Sonntag 16:00');
-    console.log('   Mail-Cleanup:   Sonntag 03:00 (Gesendet > 3 Monate)');
 }
 
 function stopScheduler() {
