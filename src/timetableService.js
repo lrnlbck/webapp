@@ -9,6 +9,7 @@ const { sendChangeMail } = require('./emailService');
 
 const CACHE_PATH = path.join(__dirname, '../cache/timetable.json');
 const CACHE_META = path.join(__dirname, '../cache/timetable_meta.json');
+const REPORTED_PATH = path.join(__dirname, '../cache/timetable_reported.json');
 
 // Fortschritt
 let refreshProgress = { status: 'idle', message: 'Bereit', progress: 0 };
@@ -34,6 +35,55 @@ function getTimetableMeta() {
         if (fs.existsSync(CACHE_META)) return JSON.parse(fs.readFileSync(CACHE_META, 'utf8'));
     } catch { }
     return { lastUpdated: null };
+}
+
+// ─── Bereits gemeldete Änderungen ─────────────────────────────────
+function loadReportedState() {
+    try {
+        if (fs.existsSync(REPORTED_PATH)) return JSON.parse(fs.readFileSync(REPORTED_PATH, 'utf8'));
+    } catch { }
+    return { addedIds: [], changedSnapshots: [] };
+}
+
+function saveReportedState(diff) {
+    const state = {
+        addedIds: diff.added.map(e => e.id),
+        // Snapshot des gemeldeten Ziel-Zustands für jede Änderung
+        changedSnapshots: diff.changed.map(c => ({
+            id: c.after.id,
+            timeFrom: c.after.timeFrom,
+            timeTo: c.after.timeTo,
+            location: c.after.location,
+            title: c.after.title
+        })),
+        reportedAt: new Date().toISOString()
+    };
+    fs.mkdirSync(path.dirname(REPORTED_PATH), { recursive: true });
+    fs.writeFileSync(REPORTED_PATH, JSON.stringify(state, null, 2));
+}
+
+function filterAlreadyReported(diff) {
+    const reported = loadReportedState();
+    const reportedAddedIds = new Set(reported.addedIds || []);
+    const reportedChangedMap = new Map(
+        (reported.changedSnapshots || []).map(s => [s.id, s])
+    );
+
+    const added = diff.added.filter(e => !reportedAddedIds.has(e.id));
+
+    const changed = diff.changed.filter(c => {
+        const prev = reportedChangedMap.get(c.after.id);
+        if (!prev) return true; // noch nie gemeldet
+        // Unterdrücken, wenn der aktuelle Zustand identisch mit dem zuletzt gemeldeten Zustand ist
+        return !(
+            prev.timeFrom === c.after.timeFrom &&
+            prev.timeTo === c.after.timeTo &&
+            prev.location === c.after.location &&
+            prev.title === c.after.title
+        );
+    });
+
+    return { added, removed: diff.removed, changed };
 }
 
 // ─── Vergleich ────────────────────────────────────────────────────
@@ -81,7 +131,9 @@ async function runTimetableRefresh(sendMailOnChange = true) {
         refreshProgress = { status: 'running', message: 'Verarbeitung...', progress: 75 };
 
         // Änderungen vergleichen (nur wenn bereits ein Cache vorhanden war)
-        const diff = compareTimetables(oldEvents, newEvents);
+        const rawDiff = compareTimetables(oldEvents, newEvents);
+        // Bereits gemeldete Änderungen herausfiltern
+        const diff = isFirstLoad ? rawDiff : filterAlreadyReported(rawDiff);
         const hasChanges = !isFirstLoad && (diff.added.length + diff.changed.length + diff.removed.length > 0);
 
         if (isFirstLoad) {
@@ -89,10 +141,13 @@ async function runTimetableRefresh(sendMailOnChange = true) {
         } else if (hasChanges) {
             console.log(`Stundenplan-Änderungen: +${diff.added.length} neu, ~${diff.changed.length} geändert, -${diff.removed.length} entfernt`);
             if (sendMailOnChange) {
-                try { await sendChangeMail(diff); } catch (e) { console.warn('Mail-Fehler:', e.message); }
+                try {
+                    await sendChangeMail(diff);
+                    saveReportedState(diff); // Gemeldete Änderungen persistieren
+                } catch (e) { console.warn('Mail-Fehler:', e.message); }
             }
         } else {
-            console.log('Stundenplan: Keine Änderungen festgestellt.');
+            console.log('Stundenplan: Keine (neuen) Änderungen festgestellt.');
         }
 
         saveTimetableCache(newEvents);
