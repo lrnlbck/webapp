@@ -91,7 +91,7 @@ async function sendChangeMail(diff) {
     // Aktuellen Wochenplan als PDF-Anhang generieren
     let attachments = [];
     try {
-      const { loadTimetableCache } = require('./timetableService'); // inline to avoid circular dep
+      const { loadTimetableCache } = require('./timetableService');
       const allEvents = loadTimetableCache() || [];
       const now = new Date();
       const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
@@ -104,12 +104,15 @@ async function sendChangeMail(diff) {
         const d = new Date(e.date);
         return d >= weekStart && d < weekEnd;
       });
-      const kw = Math.ceil((weekStart - new Date(weekStart.getFullYear(), 0, 1)) / 604800000) + 1;
-      const weekLabel = `KW ${kw} · ${weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} – ${new Date(weekEnd.getTime() - 86400000).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-      const pdfBuffer = await generateWeeklyTimetablePDF(weekEvents, weekLabel);
-      attachments = [{ filename: `Stundenplan_${weekStart.toLocaleDateString('de-DE').replace(/\./g, '-')}.pdf`, content: pdfBuffer }];
+      // Kein PDF wenn kein Termin diese Woche
+      if (weekEvents.length > 0) {
+        const kw = Math.ceil((weekStart - new Date(weekStart.getFullYear(), 0, 1)) / 604800000) + 1;
+        const weekLabel = `KW ${kw} \u00b7 ${weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} \u2013 ${new Date(weekEnd.getTime() - 86400000).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+        const pdfBuffer = await generateWeeklyTimetablePDF(weekEvents, weekLabel);
+        attachments = [{ filename: `Stundenplan_${weekStart.toLocaleDateString('de-DE').replace(/\./g, '-')}.pdf`, content: pdfBuffer }];
+      }
     } catch (pdfErr) {
-      console.error('⚠️  PDF-Anhang Fehler (Änderungs-Mail):', pdfErr.message);
+      console.error('PDF-Anhang Fehler (Aenderungs-Mail):', pdfErr.message);
     }
 
     const { data, error } = await resend.emails.send({
@@ -198,14 +201,17 @@ async function sendWeeklyOverview(events) {
     // Nächste Woche als PDF-Anhang
     let attachments = [];
     try {
-      const kw = Math.ceil((nextMonday - new Date(nextMonday.getFullYear(), 0, 1)) / 604800000) + 1;
-      const nextSunday = new Date(nextMonday);
-      nextSunday.setDate(nextMonday.getDate() + 6);
-      const weekLabel = `KW ${kw} · ${nextMonday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} – ${nextSunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-      const pdfBuffer = await generateWeeklyTimetablePDF(weekEvents, weekLabel);
-      attachments = [{ filename: `Wochenausblick_${nextMonday.toLocaleDateString('de-DE').replace(/\./g, '-')}.pdf`, content: pdfBuffer }];
+      // Kein PDF wenn keine Termine naechste Woche
+      if (weekEvents.length > 0) {
+        const kw = Math.ceil((nextMonday - new Date(nextMonday.getFullYear(), 0, 1)) / 604800000) + 1;
+        const nextSunday = new Date(nextMonday);
+        nextSunday.setDate(nextMonday.getDate() + 6);
+        const weekLabel = `KW ${kw} \u00b7 ${nextMonday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} \u2013 ${nextSunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+        const pdfBuffer = await generateWeeklyTimetablePDF(weekEvents, weekLabel);
+        attachments = [{ filename: `Wochenausblick_${nextMonday.toLocaleDateString('de-DE').replace(/\./g, '-')}.pdf`, content: pdfBuffer }];
+      }
     } catch (pdfErr) {
-      console.error('⚠️  PDF-Anhang Fehler (Wochenausblick):', pdfErr.message);
+      console.error('PDF-Anhang Fehler (Wochenausblick):', pdfErr.message);
     }
 
     const { data, error } = await resend.emails.send({
