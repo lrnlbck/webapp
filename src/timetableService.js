@@ -38,17 +38,24 @@ function getTimetableMeta() {
 
 // ─── Vergleich ────────────────────────────────────────────────────
 function compareTimetables(oldEvents, newEvents) {
-    const oldMap = new Map((oldEvents || []).map(e => [e.id, e]));
-    const newMap = new Map((newEvents || []).map(e => [e.id, e]));
+    // Nur zukünftige Events berücksichtigen – vergangene Termine nicht melden
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isFuture = e => e.date && new Date(e.date) >= today;
 
-    const added = newEvents.filter(e => !oldMap.has(e.id));
-    const removed = (oldEvents || []).filter(e => !newMap.has(e.id));
+    const futureNew = (newEvents || []).filter(isFuture);
+    const futureOld = (oldEvents || []).filter(isFuture);
+
+    const oldMap = new Map(futureOld.map(e => [e.id, e]));
+    const newMap = new Map(futureNew.map(e => [e.id, e]));
+
+    const added = futureNew.filter(e => !oldMap.has(e.id));
+    const removed = futureOld.filter(e => !newMap.has(e.id));
     const changed = [];
 
-    newEvents.forEach(newEv => {
+    futureNew.forEach(newEv => {
         const oldEv = oldMap.get(newEv.id);
         if (!oldEv) return;
-        // Änderung wenn Zeit, Ort oder Titel geändert
         if (oldEv.timeFrom !== newEv.timeFrom ||
             oldEv.timeTo !== newEv.timeTo ||
             oldEv.location !== newEv.location ||
@@ -60,27 +67,32 @@ function compareTimetables(oldEvents, newEvents) {
     return { added, removed, changed };
 }
 
-// ─── Haupt-Refresh ───────────────────────────────────────────────
+// ─── Haupt-Refresh ────────────────────────────────────────────────
 async function runTimetableRefresh(sendMailOnChange = true) {
     if (refreshProgress.status === 'running') return;
     refreshProgress = { status: 'running', message: 'Stundenplan wird geladen...', progress: 10 };
 
     try {
         const oldEvents = loadTimetableCache();
+        const isFirstLoad = !oldEvents; // Kein Cache = erster Start nach Neustart
         refreshProgress = { status: 'running', message: 'Portale werden abgefragt...', progress: 40 };
 
         const newEvents = await scrapeTimetable();
         refreshProgress = { status: 'running', message: 'Verarbeitung...', progress: 75 };
 
-        // Änderungen vergleichen
+        // Änderungen vergleichen (nur wenn bereits ein Cache vorhanden war)
         const diff = compareTimetables(oldEvents, newEvents);
-        const hasChanges = diff.added.length + diff.changed.length + diff.removed.length > 0;
+        const hasChanges = !isFirstLoad && (diff.added.length + diff.changed.length + diff.removed.length > 0);
 
-        if (hasChanges) {
-            console.log(`🔄 Stundenplan-Änderungen: +${diff.added.length} neu, ~${diff.changed.length} geändert, -${diff.removed.length} entfernt`);
+        if (isFirstLoad) {
+            console.log('Stundenplan: Erster Load nach Neustart – kein Mail-Vergleich.');
+        } else if (hasChanges) {
+            console.log(`Stundenplan-Änderungen: +${diff.added.length} neu, ~${diff.changed.length} geändert, -${diff.removed.length} entfernt`);
             if (sendMailOnChange) {
                 try { await sendChangeMail(diff); } catch (e) { console.warn('Mail-Fehler:', e.message); }
             }
+        } else {
+            console.log('Stundenplan: Keine Änderungen festgestellt.');
         }
 
         saveTimetableCache(newEvents);
